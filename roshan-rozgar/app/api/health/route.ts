@@ -10,7 +10,7 @@
 import { count } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { customers, jobs, reviews, trades, workers } from '@/db/schema';
-import { isFullyStubbed } from '@/lib/env';
+import { hasElevenLabs, hasSupabaseStorage, isFullyStubbed } from '@/lib/env';
 import { handle, ok } from '@/lib/http';
 
 export const runtime = 'nodejs';
@@ -55,5 +55,11 @@ export const GET = handle(async (_req: Request) => {
     ...(providerError ? { providerError } : {}),
     counts,
     stubbed: isFullyStubbed(),
+    // Which backing service each media path will actually use right now.
+    services: {
+      storage: hasSupabaseStorage() ? 'supabase' : 'local-disk',
+      speechToText: hasElevenLabs() ? 'elevenlabs-scribe' : 'fallback-chain',
+      textToSpeech: hasElevenLabs() ? 'elevenlabs' : 'unavailable (use browser voice)',
+    },
   });
 });

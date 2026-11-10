@@ -53,7 +53,9 @@ Each capability tries `anthropic -> openai -> stub`. **Every response carries
 
 | Purpose | Provider | Model | What breaks without it |
 |---|---|---|---|
-| Urdu speech-to-text | OpenAI | `whisper-1` | Worker cannot onboard by voice server-side (browser Web Speech API is the client fallback) |
+| Urdu speech-to-text (primary) | ElevenLabs | `scribe_v1` | Worker cannot onboard by voice server-side (browser Web Speech API is the client fallback) |
+| Urdu speech-to-text (fallback) | OpenAI | `whisper-1` | Used when Scribe is unavailable |
+| Read prompts aloud (text-to-speech) | ElevenLabs | `eleven_v3` | Worker who cannot read hears nothing; the frontend falls back to browser speech |
 | Profile extraction | Anthropic | `claude-opus-5-5` | Speech is not a searchable profile |
 | Problem classification, photo tagging | Anthropic | `claude-sonnet-5-5` | Customer must diagnose the trade herself |
 | Translation Urdu <-> English | Anthropic | `claude-sonnet-5-5` | Worker and customer cannot negotiate |
@@ -62,6 +64,28 @@ Each capability tries `anthropic -> openai -> stub`. **Every response carries
 
 Responses are cached by input hash (`lib/ai/cache.ts`). A `GEMINI_API_KEY` slot
 exists in `lib/env.ts` but **no Gemini provider is implemented**.
+
+## Connecting Supabase and ElevenLabs
+
+Everything below is optional; each piece falls back on its own. Put the values in
+`.env` (gitignored), then run `npm run check:integrations`.
+
+| Service | `.env` keys | Without it |
+|---|---|---|
+| Supabase Postgres | `DATABASE_URL` (use the **Session pooler** string; the direct host is IPv6-only) | Embedded PGlite |
+| Supabase Storage | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (server-only) | Uploads saved to `.data/uploads` |
+| ElevenLabs | `ELEVENLABS_API_KEY` | Speech-to-text falls back to Whisper, then the stub; `/api/ai/speak` returns an error and the UI uses browser speech |
+
+After setting `DATABASE_URL`, run `npm run db:migrate && npm run seed` once so the
+Supabase database has the schema and demo data. The migrations also enable
+row-level security on every table, so Supabase's public REST API cannot read
+them; the app connects directly as the table owner and is unaffected.
+
+New endpoints: `POST /api/upload` (multipart `file`; audio up to 8 MB, jpeg/png/webp
+up to 5 MB; returns `{ url, driver }`), `GET /api/upload/:name` (local-disk files
+only), and `GET|POST /api/ai/speak` (text up to 500 chars, returns `audio/mpeg`,
+cached on disk by text hash). `GET /api/health` reports which service each path
+is using under `services`.
 
 ## Booking consistency (Outcome 4)
 
@@ -121,7 +145,8 @@ Score: `0.40*available + 0.25*exp(-km/4) + 0.20*skill_match + 0.15*rating/5`.
 ## Known limitations
 
 - No frontend yet.
-- No media upload or storage: `audioUrl` / `photoUrl` are caller-supplied strings.
+- Uploads are unauthenticated and `/api/ai/speak` spends ElevenLabs credit on any
+  caller; both are capped by size/length but have no rate limit.
 - The stub translator is phrase substitution; stubbed "English" still contains
   Urdu fragments. Do not demo translation without a real key.
 - PGlite serialises transactions, so a local `Promise.all` race never reaches the

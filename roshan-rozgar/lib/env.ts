@@ -24,6 +24,22 @@ const schema = z.object({
 
   GEMINI_API_KEY: z.string().min(1).optional(),
 
+  // ElevenLabs: Scribe speech-to-text (leads the transcribe chain) and
+  // text-to-speech for reading prompts aloud to workers who cannot read.
+  ELEVENLABS_API_KEY: z.string().min(1).optional(),
+  ELEVENLABS_STT_MODEL: z.string().min(1).default('scribe_v1'),
+  // eleven_v3 is the model family that covers Urdu; the v2.x multilingual ones do not.
+  ELEVENLABS_TTS_MODEL: z.string().min(1).default('eleven_v3'),
+  // "Alice" — a premade voice. Free-plan accounts can only use premade voices
+  // over the API; library voices (e.g. Rachel) return 402 paid_plan_required.
+  ELEVENLABS_VOICE_ID: z.string().min(1).default('Xb7hH8MSUJpSbSDYk0k2'),
+
+  // Supabase Storage for audio + photos. DATABASE_URL covers the Postgres half.
+  // Without these, uploads fall back to local disk (.data/uploads).
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_SERVICE_KEY: z.string().min(1).optional(),
+  SUPABASE_BUCKET: z.string().min(1).default('roshan-media'),
+
   // Search tuning, exposed so it can be defended in the demo.
   SEARCH_DEFAULT_RADIUS_KM: z.coerce.number().positive().default(8),
   SEARCH_MAX_RESULTS: z.coerce.number().int().positive().default(20),
@@ -31,7 +47,12 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 
-const parsed = schema.safeParse(process.env);
+// A blank `KEY=` line in .env is "not set", not an invalid empty value.
+const present = Object.fromEntries(
+  Object.entries(process.env).filter(([, value]) => value !== undefined && value.trim() !== ''),
+);
+
+const parsed = schema.safeParse(present);
 
 if (!parsed.success) {
   // Fail loudly at boot rather than at 2 AM in a route handler.
@@ -43,6 +64,8 @@ export const env = parsed.data;
 export const hasAnthropic = () => Boolean(env.ANTHROPIC_API_KEY);
 export const hasOpenAI = () => Boolean(env.OPENAI_API_KEY);
 export const hasGemini = () => Boolean(env.GEMINI_API_KEY);
+export const hasElevenLabs = () => Boolean(env.ELEVENLABS_API_KEY);
+export const hasSupabaseStorage = () => Boolean(env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY);
 
 /** True when no real model is reachable — everything will be labelled 'stub'. */
 export const isFullyStubbed = () => !hasAnthropic() && !hasOpenAI() && !hasGemini();

@@ -11,10 +11,10 @@
 
 import { z } from 'zod';
 
-export type ProviderName = 'anthropic' | 'openai' | 'gemini' | 'stub';
+export type ProviderName = 'anthropic' | 'openai' | 'elevenlabs' | 'gemini' | 'stub';
 
 export const aiMeta = z.object({
-  provider: z.enum(['anthropic', 'openai', 'gemini', 'stub']),
+  provider: z.enum(['anthropic', 'openai', 'elevenlabs', 'gemini', 'stub']),
   model: z.string().optional(),
   latencyMs: z.number().int().nonnegative(),
   cached: z.boolean().default(false),

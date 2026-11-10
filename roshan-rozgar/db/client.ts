@@ -37,7 +37,10 @@ async function create(): Promise<Handle> {
   if (url) {
     const { default: postgres } = await import('postgres');
     // max:1 keeps the hackathon well under free-tier connection caps.
-    const sql = postgres(url, { max: 1, prepare: false });
+    // prepare:false is required by Supabase's transaction pooler (port 6543).
+    // Supabase only accepts TLS; require it unless the URL already says otherwise.
+    const needsSsl = /supabase\.(co|com)/.test(url) && !/sslmode=/.test(url);
+    const sql = postgres(url, { max: 1, prepare: false, ...(needsSsl ? { ssl: 'require' as const } : {}) });
     return {
       db: drizzlePg(sql, { schema }) as unknown as Db,
       driver: 'postgres',

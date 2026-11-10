@@ -14,7 +14,8 @@
     "seed": "tsx --env-file-if-exists=.env db/seed.ts",
     "setup": "npm run db:generate && npm run db:migrate && npm run seed",
     "verify": "tsx --env-file-if-exists=.env scripts/verify-invariants.ts",
-    "smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts"
+    "smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts",
+    "check:integrations": "tsx --env-file-if-exists=.env scripts/check-integrations.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.7.0",

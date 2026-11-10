@@ -107,3 +107,28 @@ onboard live by voice during the demo.
    `GEMINI_API_KEY` is read but no Gemini provider exists.
 3. Deploy: hosted Postgres, Vercel, smoke against it, and a real-Postgres
    concurrent double-accept test (PGlite serialises the race).
+
+## 2026-11-10 — Supabase + ElevenLabs connected and verified live
+
+- Supabase Postgres via the SESSION POOLER string (the direct `db.<ref>` host is
+  IPv6-only and does not resolve on most home networks). Migrated + seeded;
+  `npm run verify` 11/11 on real Postgres, smoke 34/34 through the app.
+- Migration 0002 enables RLS on every table so Supabase's public REST API cannot
+  read them; the app connects directly as owner and is unaffected.
+- Supabase Storage: `POST /api/upload` (bucket auto-created, local-disk fallback).
+  `SUPABASE_URL` is reduced to its origin, so a pasted ".../rest/v1/" still works.
+- ElevenLabs: Scribe (`scribe_v1`) now leads the transcribe chain; TTS at
+  `/api/ai/speak` (`eleven_v3`, disk-cached). Free plan = premade voices only
+  (default "Alice"); library voices return 402.
+- `npm run check:integrations` tests DB, Storage and ElevenLabs without printing keys.
+- Seed WITHOUT `--keep` TRUNCATEs all app tables. Use `npm run seed -- --keep`
+  on any database that might hold real data.
+- Windows gotchas hit while testing: Urdu text on a curl command line is mangled
+  (percent-encode it), and `ls -l | awk '{print $5}'` returns the group id here.
+
+### Still not done
+1. Anthropic/OpenAI keys not set: extraction, classification, translation,
+   summaries, vision still run on the stub (translation is the weak one).
+2. No auth/rate limit on /api/upload and /api/ai/speak (spends ElevenLabs credit).
+3. Deploy (Vercel), and a true concurrent double-accept test on real Postgres
+   (client pool is max:1, so requests still serialise).

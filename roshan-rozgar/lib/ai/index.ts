@@ -42,7 +42,7 @@ async function loadProviders(): Promise<AiProvider[]> {
 
   const loaded: AiProvider[] = [];
 
-  for (const mod of ['./anthropic', './openai', './stub'] as const) {
+  for (const mod of ['./anthropic', './openai', './elevenlabs', './stub'] as const) {
     try {
       const m = (await import(mod)) as { provider?: AiProvider; default?: AiProvider };
       const p = m.provider ?? m.default;
@@ -58,10 +58,11 @@ async function loadProviders(): Promise<AiProvider[]> {
 
 /**
  * Provider preference per capability.
- * Whisper leads on speech; Claude leads on everything textual and visual.
+ * ElevenLabs Scribe leads on speech with Whisper as the second opinion;
+ * Claude leads on everything textual and visual.
  */
 const PREFERENCE: Record<Capability, Array<AiProvider['name']>> = {
-  transcribe: ['openai', 'anthropic', 'stub'],
+  transcribe: ['elevenlabs', 'openai', 'anthropic', 'stub'],
   extractProfile: ['anthropic', 'openai', 'stub'],
   tagPhoto: ['anthropic', 'openai', 'stub'],
   classifyProblem: ['anthropic', 'openai', 'stub'],
