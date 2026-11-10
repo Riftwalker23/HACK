@@ -2,11 +2,12 @@
 
 /** C6 · Review — `C6-Review.dc.html` on the canvas. */
 
-import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Stage from '@/components/stage';
 import { useLang } from '@/components/lang';
 import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
+import { api } from '@/lib/client-api';
 
 const D = {
   ur: {
@@ -51,9 +52,28 @@ const TAGS = ['clock', 'spark', 'coin', 'smile'] as const;
 
 export default function ReviewPage() {
   const { lang } = useLang('en');
+  const router = useRouter();
   const t = D[lang];
   const [r, setR] = useState(5);
   const [on, setOn] = useState<Record<string, boolean>>({ clock: true, spark: true, coin: true });
+  const [jobId, setJobId] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') setJobId(new URLSearchParams(window.location.search).get('jobId') ?? '');
+  }, []);
+
+  async function submitReview() {
+    if (!jobId) { setError('Open this page from a completed booking to leave a review.'); return; }
+    setSending(true); setError('');
+    try {
+      await api('/api/reviews', { method: 'POST', body: JSON.stringify({ jobId, stars: r, tags: TAGS.filter((tag) => on[tag]).map((tag) => ({ clock: 'on-time', spark: 'clean-work', coin: 'fair-price', smile: 'polite' })[tag]), ...(reviewText.trim() ? { transcriptEn: reviewText.trim(), language: 'en' } : {}) }) });
+      router.push('/customer/states');
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not submit the review.'); }
+    finally { setSending(false); }
+  }
 
   return (
     <Stage>
@@ -89,20 +109,11 @@ export default function ReviewPage() {
           </div>
 
           <div className="card col g12" style={{ padding: '14px', borderRadius: '18px', alignItems: 'center' }}>
-            <div className="orb" style={{ width: '80px', height: '80px' }}>
-              <button className="mic" aria-label={t.speak} style={{ width: '80px', height: '80px' }}>
-                <Icon name="i-mic" style={{ width: '34px', height: '34px' }} />
-              </button>
-            </div>
-            <span className="b bold">{t.speak}</span>
-            <div className="col g8" style={{ width: '100%' }} aria-live="polite">
-              <div className="row g8">
-                <span className="ai">AI · demo</span>
-                <span className="xs soft">{t.aiNote}</span>
-              </div>
-              <p className="tx">{t.said}</p>
-            </div>
+            <label className="col g8 l bold" style={{ width: '100%' }}>{t.speak}
+              <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} maxLength={2000} rows={3} placeholder="Tell other customers what went well" style={{ resize: 'vertical', minHeight: 80, border: '2px solid var(--line)', borderRadius: 14, padding: 12, font: 'inherit' }} />
+            </label>
           </div>
+          {error && <p role="alert" style={{ color: '#b3162b' }}>{error}</p>}
 
           <div className="col g8">
             <span className="l bold soft">{t.tagsH}</span>
@@ -124,10 +135,10 @@ export default function ReviewPage() {
         </main>
 
         <div className="dock">
-          <Link className="btn btn-t" href="/customer/states" style={{ minHeight: '56px' }}>
+          <button type="button" className="btn btn-t" disabled={sending} onClick={() => void submitReview()} style={{ minHeight: '56px' }}>
             <Icon name="i-chk" cls="s24" />
-            {t.send}
-          </Link>
+            {sending ? 'Sending…' : t.send}
+          </button>
         </div>
       </Screen>
     </Stage>

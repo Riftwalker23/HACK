@@ -16,6 +16,7 @@ const D = {
     read: 'یہ صفحہ سنیں',
     hearW: 'سنیں: میں کام کرتا ہوں',
     hearC: 'سنیں: مجھے کام کرانا ہے',
+    dashboard: 'پہلے سے رجسٹر ہیں؟ کاریگر ڈیش بورڈ کھولیں',
   },
   rm: {
     hello: 'Assalam-o-Alaikum! Aap kaun hain?',
@@ -25,6 +26,7 @@ const D = {
     read: 'Yeh safha sunein',
     hearW: 'Sunein: Main kaam karta hoon',
     hearC: 'Sunein: Mujhe kaam karana hai',
+    dashboard: 'Pehle se registered? Worker dashboard kholein',
   },
   en: {
     hello: 'Assalam-o-Alaikum! Who are you?',
@@ -34,6 +36,7 @@ const D = {
     read: 'Read this page aloud',
     hearW: 'Hear: I do work',
     hearC: 'Hear: I need work done',
+    dashboard: 'Already registered? Open the worker dashboard',
   },
 };
 
@@ -102,6 +105,9 @@ export default function RolePage() {
               <span className="arrow">
                 <Icon name="i-chev" cls="flip" />
               </span>
+            </Link>
+            <Link href="/worker/home" className="l soft" style={{ display: 'block', textAlign: 'center', padding: '10px 8px', textDecoration: 'underline' }}>
+              {t.dashboard}
             </Link>
           </div>
 

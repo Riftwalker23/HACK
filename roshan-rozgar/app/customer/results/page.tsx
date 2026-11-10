@@ -1,208 +1,106 @@
 'use client';
 
-/** C2 · Results — `C2-Results.dc.html` on the canvas. */
-
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Stage from '@/components/stage';
 import { useLang } from '@/components/lang';
-import { ExitBtn, Glyph, Icon, LangSwitch, Screen, Shape, rise } from '@/components/ui';
-import { fmtTime, useAvailability, useMinute } from '@/lib/availability';
+import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
+import { api, getSession, loadSearch, saveActiveJob, signInDemo, type DemoUser } from '@/lib/client-api';
 
-const D = {
-  ur: {
-    back: 'واپس',
-    h: 'قریب پلمبر',
-    map: 'نقشہ: آپ کے قریب 3 پلمبر',
-    count: '3 قریب',
-    filters: 'فلٹر',
-    call: 'کال',
-    req: 'بلائیں',
-    f: ['ابھی فارغ', '3 کلومیٹر', '4.5+ ستارے', 'Rs 1–3k'],
-    free: 'فارغ',
-    busy: '4 بجے تک مصروف',
-    busyAt: (x: string) => `${x} تک مصروف`,
-    bookAt: (x: string) => `${x} پر بک کریں`,
-    jobs: 'کام',
-    w1: 'سب سے قریب پلمبر جس نے 12 گیزر ٹھیک کیے',
-    w2: 'سب سے زیادہ ریٹنگ، لیکن ابھی مصروف',
-  },
-  rm: {
-    back: 'Wapas',
-    h: 'Qareeb plumber',
-    map: 'Naqsha: aap ke qareeb 3 plumber',
-    count: '3 qareeb',
-    filters: 'Filter',
-    call: 'Call',
-    req: 'Bulayein',
-    f: ['Abhi faarigh', '3 km', '4.5+ sitaare', 'Rs 1–3k'],
-    free: 'Faarigh',
-    busy: '4 baje tak masroof',
-    busyAt: (x: string) => `${x} tak masroof`,
-    bookAt: (x: string) => `${x} par book karein`,
-    jobs: 'kaam',
-    w1: 'Sab se qareeb plumber jis ne 12 geyser theek kiye',
-    w2: 'Sab se zyada rating, lekin abhi masroof',
-  },
-  en: {
-    back: 'Back',
-    h: 'Plumbers nearby',
-    map: 'Map: 3 plumbers near you',
-    count: '3 nearby',
-    filters: 'Filters',
-    call: 'Call',
-    req: 'Request',
-    f: ['Available now', '≤ 3 km', '4.5+ stars', 'Rs 1–3k'],
-    free: 'Available',
-    busy: 'Busy till 4 pm',
-    busyAt: (x: string) => `Busy till ${x}`,
-    bookAt: (x: string) => `Book for ${x}`,
-    jobs: 'jobs',
-    w1: 'Closest plumber who has fixed 12 geyser leaks',
-    w2: 'Highest rated nearby, but on a job now',
-  },
+type Worker = DemoUser & {
+  area: string;
+  status: 'FREE' | 'BUSY' | 'OFF';
+  rating: number;
+  jobsCompleted: number;
+  rateMin: number;
+  rateMax: number;
+  trade: { nameEn: string; nameUr: string };
+  skills: Array<{ labelEn: string; labelUr: string | null }>;
+  distance: { km: number; en: string; ur: string };
+  trustSummary: { summaryEn: string; sourceReviewCount: number } | null;
 };
 
 export default function ResultsPage() {
   const { lang } = useLang('en');
-  const t = D[lang];
-  const [off, setOff] = useState<Record<number, boolean>>({});
+  const router = useRouter();
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [customer, setCustomer] = useState<DemoUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [requesting, setRequesting] = useState('');
+  const search = loadSearch();
+  const copy = lang === 'ur'
+    ? { title: 'قریب کاریگر', back: 'واپس', loading: 'کاریگر تلاش ہو رہے ہیں…', empty: 'اس کام کے لیے ابھی کوئی کاریگر دستیاب نہیں۔', retry: 'دوبارہ تلاش کریں', request: 'کام کی درخواست بھیجیں', sent: 'درخواست بھیج رہے ہیں…', rating: 'ریٹنگ', jobs: 'مکمل کام', km: 'کلومیٹر دور', fail: 'فہرست لوڈ نہیں ہوئی' }
+    : { title: search?.classification.tradeSlug ? `${search.classification.tradeSlug.replaceAll('-', ' ')} workers nearby` : 'Workers nearby', back: 'Back', loading: 'Finding nearby workers…', empty: 'No available worker matched this request. Try a wider description or another trade.', retry: 'Change request', request: 'Request this worker', sent: 'Sending request…', rating: 'Rating', jobs: 'jobs completed', km: 'away', fail: 'Could not load workers' };
 
-  // When a worker marks themselves "on a job" and sets a free time, the busy card
-  // shows that time and the button becomes "Book for <time>".
-  const av = useAvailability();
-  const nowMin = useMinute();
-  const busyUntil = av.status === 'busy' && av.freeAt && av.freeAt > nowMin * 60_000 ? av.freeAt : null;
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const who = getSession('customer') ?? await signInDemo('customer');
+        if (cancelled) return;
+        setCustomer(who);
+        const classification = loadSearch()?.classification;
+        const params = new URLSearchParams({ lat: String(who.lat ?? 33.6687), lng: String(who.lng ?? 72.9735), radiusKm: '30', available: 'true', limit: '30' });
+        if (classification?.tradeSlug) params.set('trade', classification.tradeSlug);
+        if (classification?.keywords?.length) params.set('keywords', classification.keywords.join(','));
+        const { data } = await api<Worker[]>(`/api/workers?${params}`);
+        if (!cancelled) setWorkers(data);
+      } catch (cause) {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : copy.fail);
+      } finally { if (!cancelled) setLoading(false); }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, [copy.fail]);
 
-  const workers = [
-    { ini: 'RA', name: 'Rafiq Ahmed', km: '1.2 km', st: 'free', stw: t.free, r: '4.8', jobs: `38 ${t.jobs}`, why: t.w1, price: 'Rs 1,500–2,500', book: t.req },
-    { ini: 'ZM', name: 'Zahid Mehmood', km: '2.4 km', st: 'busy', stw: busyUntil ? t.busyAt(fmtTime(busyUntil)) : t.busy, r: '4.9', jobs: `112 ${t.jobs}`, why: t.w2, price: 'Rs 2,000–3,000', book: busyUntil ? t.bookAt(fmtTime(busyUntil)) : t.req },
-  ];
+  async function requestWorker(worker: Worker) {
+    if (!customer) return;
+    setRequesting(worker.id); setError('');
+    try {
+      const req = loadSearch();
+      const { data } = await api<{ id: string; status: string; workerName: string }>(`/api/jobs`, {
+        method: 'POST',
+        body: JSON.stringify({
+          customerId: customer.id,
+          workerId: worker.id,
+          descriptionRaw: req?.description || 'Please contact me about this repair.',
+          descriptionSource: req?.source ?? 'text',
+          ...(req?.photoUrl ? { photoUrl: req.photoUrl } : {}),
+          ...(req?.classification ? { aiClassification: req.classification } : {}),
+        }),
+      });
+      saveActiveJob(data);
+      router.push(`/customer/live?jobId=${data.id}`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not send the request.'); }
+    finally { setRequesting(''); }
+  }
 
-  return (
-    <Stage>
-      <Screen skin="cust" defaultLang="en" id="s-c2" extra="rr-screen">
-        <header className="top">
-          <Link className="iconbtn" href="/customer/describe" aria-label={t.back}>
-            <Icon name="i-back" cls="s24 flip" />
-          </Link>
-          <h1 className="b bold fx">{t.h}</h1>
-          <LangSwitch fallback="en" style={{ flex: 'none', width: '176px' }} />
-          <ExitBtn />
-        </header>
-
-        <div className="map" style={{ height: '190px', flex: 'none' }} role="img" aria-label={t.map}>
-          <svg className="bg" viewBox="0 0 390 190" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 60h390M0 140h390M90 0v190M230 0v190M320 0v190" stroke="var(--road)" strokeWidth="12" />
-            <path d="M0 180L390 20" stroke="var(--road)" strokeWidth="16" />
-            <rect x="250" y="76" width="56" height="50" rx="6" fill="#CFE3CF" opacity=".7" />
-          </svg>
-          <span className="me" style={{ left: '52%', top: '52%' }} />
-          <span
-            className="pin tr-plum rr-drop"
-            style={{ left: '64%', top: '30%', width: '44px', height: '44px', background: 'var(--c)', color: 'var(--g)', ['--i' as string]: 0 }}
-          >
-            <Glyph name="g-plum" />
-          </span>
-          <span
-            className="pin tr-plum rr-drop"
-            style={{ left: '28%', top: '72%', width: '38px', height: '38px', background: 'var(--c)', color: 'var(--g)', ['--i' as string]: 1 }}
-          >
-            <Glyph name="g-plum" />
-          </span>
-          <span
-            className="pin tr-plum rr-drop"
-            style={{ left: '84%', top: '80%', width: '32px', height: '32px', background: 'var(--c)', color: 'var(--g)', ['--i' as string]: 2 }}
-          >
-            <Glyph name="g-plum" />
-          </span>
-          <span
-            className="chip sm"
-            style={{ position: 'absolute', insetBlockEnd: '10px', insetInlineStart: '12px', minHeight: '36px' }}
-          >
-            <Icon name="i-list" cls="s20" />
-            {t.count}
-          </span>
+  return <Stage><Screen skin="cust" defaultLang="en" id="s-c2" extra="rr-screen">
+    <header className="top">
+      <Link className="iconbtn" href="/customer/describe" aria-label={copy.back}><Icon name="i-back" cls="s24 flip" /></Link>
+      <h1 className="b bold fx" style={{ textTransform: 'capitalize' }}>{copy.title}</h1>
+      <LangSwitch fallback="en" style={{ flex: 'none', width: '176px' }} /><ExitBtn />
+    </header>
+    <main className="col g12 fx px" style={{ overflowY: 'auto', paddingBottom: 18 }}>
+      {search && <div className="card col g4" style={{ padding: 14, borderRadius: 16 }}><span className="soft">Your request</span><b>{search.description}</b><small>Suggested fix: {search.classification.likelyFix} · {search.classification.provider}</small></div>}
+      {loading && <p aria-live="polite">{copy.loading}</p>}
+      {!loading && workers.length === 0 && !error && <div className="card col g12" style={{ padding: 18, borderRadius: 18 }}><p>{copy.empty}</p><Link className="btn btn-t" href="/customer/describe">{copy.retry}</Link></div>}
+      {error && <p role="alert" style={{ color: '#b3162b' }}>{error}</p>}
+      {workers.map((worker) => <article key={worker.id} className="wc" style={{ flex: 'none' }}>
+        <div className="row g12">
+          <span className="av">{worker.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
+          <div className="col fx g4">
+            <div className="row sb g8"><b>{worker.name}</b><span className="num">{lang === 'ur' ? worker.distance.ur : worker.distance.en}</span></div>
+            <span className="soft">{worker.trade.nameEn} · {worker.area}</span>
+            <span className="row g8"><span>★ {Number(worker.rating).toFixed(1)} {copy.rating}</span><span>· {worker.jobsCompleted} {copy.jobs}</span></span>
+            <span>Rs {worker.rateMin.toLocaleString()}–{worker.rateMax.toLocaleString()}</span>
+            {worker.trustSummary && <small className="soft">{worker.trustSummary.summaryEn}</small>}
+          </div>
         </div>
-
-        <div
-          className="row g8 px"
-          style={{ paddingBlock: '10px', overflow: 'hidden', flex: 'none' }}
-          role="group"
-          aria-label={t.filters}
-        >
-          {t.f.map((label, i) => {
-            const on = !off[i];
-            return (
-              <button
-                type="button"
-                key={label}
-                className={`fc ${on ? 'on' : ''}`.trim()}
-                aria-pressed={on}
-                onClick={() => setOff((o) => ({ ...o, [i]: !o[i] }))}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-        <main className="col g12 fx px" style={{ overflow: 'hidden' }}>
-          {workers.map((w, i) => (
-            <article className="wc rr-rise" key={w.name} style={rise(i + 2)}>
-              <div className="row g12">
-                <span className="av">{w.ini}</span>
-                <div className="col fx g4">
-                  <div className="row sb g8">
-                    <Link href="/customer/profile" className="b bold" style={{ textDecoration: 'none' }}>
-                      {w.name}
-                    </Link>
-                    <span className="b bold num" dir="ltr">
-                      {w.km}
-                    </span>
-                  </div>
-                  <div className="row g8">
-                    <span
-                      className={`pill ${w.st}`}
-                      style={{ height: '30px', fontSize: '13px', paddingInline: '8px 10px' }}
-                    >
-                      <span className="dot">
-                        <Shape name={`s-${w.st}`} />
-                      </span>
-                      {w.stw}
-                    </span>
-                    <span className="row g4 l">
-                      <Icon name="i-star" cls="s20" style={{ fill: 'var(--star)', color: '#8A6200' }} />
-                      <b className="num">{w.r}</b>
-                      <span className="soft">· {w.jobs}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p className="why">
-                <span className="ai" style={{ flex: 'none' }}>
-                  AI
-                </span>
-                <span>{w.why}</span>
-              </p>
-              <div className="row g8">
-                <span className="l soft fx num">{w.price}</span>
-                <button
-                  type="button"
-                  className="btn btn-o"
-                  aria-label={`${t.call} ${w.name}`}
-                  style={{ minHeight: '44px', width: '48px', padding: 0 }}
-                >
-                  <Icon name="i-phone" cls="s24" />
-                </button>
-                <Link className="btn btn-t" href="/customer/profile" style={{ minHeight: '44px' }}>
-                  {w.book}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </main>
-      </Screen>
-    </Stage>
-  );
+        <button type="button" className="btn btn-t" style={{ marginTop: 12, minHeight: 48 }} disabled={requesting === worker.id} onClick={() => void requestWorker(worker)}>{requesting === worker.id ? copy.sent : copy.request}</button>
+      </article>)}
+    </main>
+  </Screen></Stage>;
 }

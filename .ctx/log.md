@@ -239,3 +239,15 @@ Both sides had independently built media upload. Reconciled, not duplicated:
 - A full `npm run seed` on Supabase was blocked by the permission checker (it
   TRUNCATEs a remote DB). The smoke run left one test worker/job/review in
   Supabase; reseed deliberately, or leave it.
+
+## 2026-11-10T17:00:00+05:00
+Confirmed the Next.js app is in `roshan-rozgar` and attempted `npm run dev`. An existing dev server (PID 4600) is already serving the project at http://localhost:3000; the second launch exited because that server owns the dev lock.
+
+## 2026-11-10T13:19:41+05:00
+Diagnosed the black screen as a Turbopack CSS worker crash (Windows process exit 0xc0000142). Restarted Next 16 in Webpack dev mode; `/` now returns HTTP 200 with the Roshan Rozgar title and splash content. Updated `package.json` so future `npm run dev` uses Webpack by default. The server is running at http://localhost:3000.
+
+## 2026-11-10T13:34:58+05:00
+Replaced static customer request/results/live-review screens with API-backed classification, media upload, ranked search, booking, status polling, price confirmation, bilingual text chat, and review submission. Replaced static worker home/chat with demo login, live request polling, availability control, accept/price/start/complete actions, and translated chat. Added a direct worker dashboard link from role selection. TypeScript passes; auth, trades, and worker search endpoints responded successfully, and all six changed routes returned HTTP 200. Browser inspection via CUA timed out; direct route/API checks succeeded.
+
+## 2026-11-10T13:37:05+05:00
+Finalized availability persistence and the review submission path. `npm run typecheck` passes, and the root plus all six functional customer/worker routes return HTTP 200 from the live dev server. Read-only backend checks confirm demo login, trade list, and available-worker search are reachable; no test booking/review was written to the database.

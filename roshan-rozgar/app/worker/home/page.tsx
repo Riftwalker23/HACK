@@ -1,300 +1,104 @@
 'use client';
 
-/**
- * W6 · Worker home — `W6-Home.dc.html` on the canvas.
- *
- * Added on top of the design: tapping "On a job" opens a box asking when the worker
- * will be free. It starts at one hour; the worker can pick 30 min / 1 h / 2 h or set
- * the time themselves. Customers then see "Busy till …" and can book from that time.
- */
-
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Stage from '@/components/stage';
-import { useLang } from '@/components/lang';
-import { ExitBtn, Glyph, Icon, LangSwitch, Screen, Shape, SpeakBtn } from '@/components/ui';
-import {
-  fmtTime,
-  fromInputValue,
-  minutesFromNow,
-  setAvailability,
-  toInputValue,
-  useAvailability,
-  type Status,
-} from '@/lib/availability';
+import { ExitBtn, LangSwitch, Screen } from '@/components/ui';
+import { api, getSession, saveSession, signInDemo, type DemoUser } from '@/lib/client-api';
 
-const D = {
-  ur: {
-    hi: 'سلام، اسلم بھائی!',
-    h: 'آج میرا حال',
-    earn: 'آج کی کمائی',
-    j1: 'کچن میں شارٹ سرکٹ',
-    free: 'فارغ ہوں',
-    busy: 'کام پر ہوں',
-    off: 'آج چھٹی',
-    read: 'یہ صفحہ سنیں',
-    when: 'آپ کب فارغ ہوں گے؟',
-    q30: '30 منٹ',
-    q60: '1 گھنٹہ',
-    q120: '2 گھنٹے',
-    custom: 'یا خود وقت لگائیں',
-    freeAt: 'فارغ',
-    book: 'اس وقت سے گاہک آپ کو بک کر سکتے ہیں',
-    done: 'ٹھیک ہے',
-    edit: 'وقت بدلیں',
-    close: 'بند کریں',
-  },
-  rm: {
-    hi: 'Salaam, Aslam bhai!',
-    h: 'Aaj mera haal',
-    earn: 'Aaj ki kamai',
-    j1: 'Kitchen mein short circuit',
-    free: 'Faarigh hoon',
-    busy: 'Kaam par hoon',
-    off: 'Aaj chutti',
-    read: 'Yeh safha sunein',
-    when: 'Aap kab faarigh honge?',
-    q30: '30 minute',
-    q60: '1 ghanta',
-    q120: '2 ghante',
-    custom: 'Ya khud waqt lagayein',
-    freeAt: 'Faarigh',
-    book: 'Is waqt se gahak aap ko book kar sakte hain',
-    done: 'Theek hai',
-    edit: 'Waqt badlein',
-    close: 'Band karein',
-  },
-  en: {
-    hi: 'Salaam, Aslam bhai!',
-    h: 'My status today',
-    earn: 'Earned today',
-    j1: 'Kitchen short circuit',
-    free: 'Available',
-    busy: 'On a job',
-    off: 'Off today',
-    read: 'Read this page aloud',
-    when: 'When will you be free?',
-    q30: '30 min',
-    q60: '1 hour',
-    q120: '2 hours',
-    custom: 'Or set the time yourself',
-    freeAt: 'Free at',
-    book: 'Customers can book you from then',
-    done: 'Done',
-    edit: 'Change time',
-    close: 'Close',
-  },
+type Job = {
+  id: string; status: string; worker: { id: string; name: string; status: string };
+  customer: { name: string; addressLabel: string };
+  trade: { nameEn: string }; description: { raw: string };
+  price: { amount: number | null; unit: string | null; confirmedByWorker: boolean; confirmedByCustomer: boolean };
+  timestamps: { requestedAt: string };
 };
 
-const STATES: Status[] = ['free', 'busy', 'off'];
-const QUICK = [30, 60, 120] as const;
-
 export default function WorkerHomePage() {
-  const { lang } = useLang('ur');
-  const t = D[lang];
-  const av = useAvailability();
-  const [sheet, setSheet] = useState(false);
-  // which quick chip is lit: a number of minutes, or 'custom' once the time was typed
-  const [choice, setChoice] = useState<number | 'custom'>(60);
+  const [worker, setWorker] = useState<DemoUser | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const pick = (id: Status) => {
-    if (id !== 'busy') {
-      setAvailability({ status: id, freeAt: null });
-      setSheet(false);
-      return;
-    }
-    if (av.status === 'busy' && av.freeAt) {
-      // already busy: tapping again reopens the box to change the time
-      setChoice('custom');
-    } else {
-      // first tap: assume the usual one hour, and let the worker adjust it
-      setAvailability({ status: 'busy', freeAt: minutesFromNow(60) });
-      setChoice(60);
-    }
-    setSheet(true);
-  };
+  const refresh = useCallback(async (id: string) => {
+    try {
+      const { data } = await api<Job[]>(`/api/jobs?workerId=${id}&status=REQUESTED,ACCEPTED,PRICE_AGREED,IN_PROGRESS`);
+      setJobs(data);
+      const me = getSession('worker');
+      if (me) setWorker({ ...me, status: data.some((job) => job.status === 'ACCEPTED' || job.status === 'PRICE_AGREED' || job.status === 'IN_PROGRESS') ? 'BUSY' : me.status });
+      setError('');
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load requests.'); }
+    finally { setLoading(false); }
+  }, []);
 
-  const quick = (mins: number) => {
-    setAvailability({ status: 'busy', freeAt: minutesFromNow(mins) });
-    setChoice(mins);
-  };
+  useEffect(() => {
+    let stopped = false;
+    let timer: number | undefined;
+    void (async () => {
+      try {
+        const me = getSession('worker') ?? await signInDemo('worker');
+        if (stopped) return;
+        setWorker(me);
+        await refresh(me.id);
+        timer = window.setInterval(() => { void refresh(me.id); }, 5000);
+      } catch (cause) { if (!stopped) { setError(cause instanceof Error ? cause.message : 'Could not sign in.'); setLoading(false); } }
+    })();
+    return () => { stopped = true; if (timer !== undefined) window.clearInterval(timer); };
+  }, [refresh]);
 
-  const typed = (value: string) => {
-    const at = fromInputValue(value);
-    if (at) {
-      setAvailability({ status: 'busy', freeAt: at });
-      setChoice('custom');
-    }
-  };
+  async function act(job: Job, action: 'accept' | 'price' | 'start' | 'complete') {
+    if (!worker) return;
+    setBusyId(job.id); setError('');
+    try {
+      if (action === 'price') {
+        const amount = Math.max(500, Math.round((Number(worker.rateMin ?? 1500) + Number(worker.rateMax ?? 3000)) / 2));
+        await api(`/api/jobs/${job.id}/price`, { method: 'POST', body: JSON.stringify({ mode: 'propose', actor: 'worker', amount, unit: 'fixed', includes: ['Labour'] }) });
+      } else if (action === 'complete') {
+        await api(`/api/jobs/${job.id}/complete`, { method: 'POST', body: '{}' });
+        const available = { ...worker, status: 'FREE' as const };
+        setWorker(available);
+        saveSession('worker', available);
+      } else {
+        await api(`/api/jobs/${job.id}/${action}`, { method: 'POST', body: '{}' });
+      }
+      await refresh(worker.id);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'That action could not be completed.'); }
+    finally { setBusyId(''); }
+  }
 
-  const st = av.status;
-  const when = av.freeAt ? fmtTime(av.freeAt) : null;
+  async function toggleAvailability() {
+    if (!worker) return;
+    const status = worker.status === 'OFF' ? 'FREE' : 'OFF';
+    try {
+      const { data } = await api<DemoUser>(`/api/workers/${worker.id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+      const updated = { ...worker, status: data.status };
+      setWorker(updated);
+      saveSession('worker', updated);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not update availability.'); }
+  }
 
-  return (
-    <Stage>
-      <Screen skin="work" defaultLang="ur" id="s-w6" extra="rr-screen">
-        <header className="top">
-          <SpeakBtn label={t.read} say={`${t.hi} ${t.h}`} lang={lang} />
-          <LangSwitch fallback="ur" />
-          <ExitBtn />
-        </header>
-
-        <main className="col g12 fx px" style={{ paddingBottom: '16px' }}>
-          <h1 className="sr">{t.h}</h1>
-
-          <div className="row g12">
-            <span
-              className="gl s56"
-              style={{
-                ['--c' as string]: 'var(--roshan)',
-                ['--g' as string]: '#0B1020',
-                font: "800 22px/1 'Plus Jakarta Sans', sans-serif",
-                border: '3px solid #0B1020',
-              }}
-            >
-              MA
-            </span>
-            <p className="t nq fx">{t.hi}</p>
-          </div>
-
-          <div className="col g12" role="group" aria-label={t.h} aria-live="polite">
-            {STATES.map((id) => {
-              const on = id === st;
-              return (
-                <button
-                  type="button"
-                  key={id}
-                  className={`st ${id} ${on ? 'sel' : ''}`.trim()}
-                  aria-pressed={on}
-                  onClick={() => pick(id)}
-                >
-                  <span className={`sh${on ? ' rr-flip' : ''}`}>
-                    <Shape name={`s-${id}-lg`} box={48} />
-                  </span>
-                  <span className={`${on ? 'd' : 't'} nq`}>{t[id]}</span>
-                  {on && id === 'busy' && when && (
-                    <span
-                      className="row g8 l bold rr-pop"
-                      style={{ marginTop: '-4px' }}
-                      aria-label={`${t.freeAt} ${when}. ${t.edit}`}
-                    >
-                      <Icon name="i-clock" cls="s24" />
-                      <span dir="ltr" className="num">
-                        {t.freeAt} {when}
-                      </span>
-                      <Icon name="i-pen" cls="s20" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="card row g12" style={{ padding: '14px 16px', marginTop: 'auto' }}>
-            <span className="gl s56" style={{ ['--c' as string]: 'var(--roshan)', ['--g' as string]: '#0B1020' }}>
-              <Icon name="i-coin" />
-            </span>
-            <div className="col fx">
-              <span className="l soft">{t.earn}</span>
-              <span className="t num" dir="ltr" style={{ textAlign: 'start' }}>
-                Rs 3,500
-              </span>
-            </div>
-            <span className="row g4 l bold" style={{ color: 'var(--accept)' }}>
-              <Icon name="i-chk" cls="s24" />2
-            </span>
-          </div>
-
-          <Link className="job rr-rise" href="/worker/request" style={{ textDecoration: 'none' }}>
-            <span className="gl s56 tr-elec">
-              <Glyph name="g-elec" />
-            </span>
-            <div className="col fx">
-              <span className="b bold">{t.j1}</span>
-              <span className="row g8 l soft">
-                <Icon name="i-pin" cls="s20" />
-                <span className="num">1.8 km</span>
-                <Icon name="i-clock" cls="s20" />
-                <span className="num">4:30</span>
-              </span>
-            </div>
-          </Link>
-        </main>
-
-        {sheet && st === 'busy' && av.freeAt && (
-          <>
-            <div className="scrim" onClick={() => setSheet(false)} />
-            <section
-              className="sheet col g12 rr-sheet"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="free-h"
-            >
-              <div className="grab" />
-              <h2 id="free-h" className="t nq">
-                {t.when}
-              </h2>
-
-              <div className="row g8" role="radiogroup" aria-label={t.when}>
-                {QUICK.map((m) => (
-                  <button
-                    type="button"
-                    key={m}
-                    className={`chip${choice === m ? ' sel' : ''}`}
-                    role="radio"
-                    aria-checked={choice === m}
-                    onClick={() => quick(m)}
-                    style={{ flex: 1, justifyContent: 'center', minHeight: '56px' }}
-                  >
-                    {t[`q${m}` as 'q30' | 'q60' | 'q120']}
-                  </button>
-                ))}
-              </div>
-
-              <label className="col g8">
-                <span className="l soft">{t.custom}</span>
-                <input
-                  type="time"
-                  className="num"
-                  value={toInputValue(av.freeAt)}
-                  onChange={(e) => typed(e.target.value)}
-                  style={{
-                    minHeight: '56px',
-                    width: '100%',
-                    padding: '0 16px',
-                    borderRadius: '16px',
-                    border: `2px solid ${choice === 'custom' ? 'var(--text)' : 'var(--line)'}`,
-                    background: 'var(--surface)',
-                    color: 'var(--text)',
-                    font: "700 22px 'Plus Jakarta Sans', sans-serif",
-                  }}
-                />
-              </label>
-
-              <div
-                className="card row g12"
-                style={{ padding: '12px 14px', background: 'var(--tint)', borderColor: 'var(--roshan)' }}
-                aria-live="polite"
-              >
-                <span className="gl s40" style={{ ['--c' as string]: 'var(--accept)', ['--g' as string]: '#fff' }}>
-                  <Icon name="i-clock" cls="s24" />
-                </span>
-                <div className="col fx">
-                  <span className="b bold num" dir="ltr" style={{ textAlign: 'start' }}>
-                    {t.freeAt} {fmtTime(av.freeAt)}
-                  </span>
-                  <span className="l soft">{t.book}</span>
-                </div>
-              </div>
-
-              <button type="button" className="btn btn-ok" onClick={() => setSheet(false)}>
-                <Icon name="i-chk" />
-                <span className="nq">{t.done}</span>
-              </button>
-            </section>
-          </>
-        )}
-      </Screen>
-    </Stage>
-  );
+  return <Stage><Screen skin="work" defaultLang="ur" id="s-w-home" extra="rr-screen">
+    <header className="top"><div className="col fx g4"><b className="t">Assalam-o-Alaikum{worker ? `, ${worker.name.split(' ')[0]}` : ''}</b><span className="soft">{worker?.tradeNameEn ?? 'Your work'}</span></div><LangSwitch fallback="ur" /><ExitBtn /></header>
+    <main className="col g12 fx px" style={{ overflowY: 'auto', paddingBottom: 18 }}>
+      {worker && <div className="card row sb" style={{ padding: 14, borderRadius: 16 }}><div className="col g4"><b>Work availability</b><span className="soft">{worker.status === 'OFF' ? 'You are hidden from customers' : worker.status === 'BUSY' ? 'You have an active job' : 'Customers can request you'}</span></div><button type="button" className={`pill ${worker.status === 'FREE' ? 'free' : 'busy'}`} disabled={worker.status === 'BUSY'} onClick={() => void toggleAvailability()}>{worker.status === 'OFF' ? 'Go available' : worker.status === 'BUSY' ? 'Busy' : 'Go offline'}</button></div>}
+      <h2 className="b bold">Requests and active jobs</h2>
+      {loading && <p aria-live="polite">Loading your requests…</p>}
+      {!loading && jobs.length === 0 && <div className="card col g8" style={{ padding: 18, borderRadius: 18 }}><b>No open requests yet</b><span className="soft">New customer requests appear here automatically.</span></div>}
+      {jobs.map((job) => <article key={job.id} className="card col g12" style={{ padding: 16, borderRadius: 18, flex: 'none' }}>
+        <div className="row sb g8"><b>{job.trade.nameEn} · {job.customer.name}</b><span className="pill busy">{job.status.replaceAll('_', ' ')}</span></div>
+        <span>{job.description.raw}</span><span className="soft">{job.customer.addressLabel}</span>
+        {job.price.amount !== null && <b>Proposed: Rs {job.price.amount.toLocaleString()} {job.price.unit}</b>}
+        <div className="row g8 wrap">
+          {job.status === 'REQUESTED' && <button className="btn btn-ok" disabled={busyId === job.id} onClick={() => void act(job, 'accept')}>Accept request</button>}
+          {job.status === 'ACCEPTED' && <button className="btn btn-ok" disabled={busyId === job.id} onClick={() => void act(job, 'price')}>{job.price.amount ? 'Update price proposal' : 'Propose a fair price'}</button>}
+          {job.status === 'PRICE_AGREED' && <button className="btn btn-ok" disabled={busyId === job.id} onClick={() => void act(job, 'start')}>Start this job</button>}
+          {job.status === 'IN_PROGRESS' && <button className="btn btn-ok" disabled={busyId === job.id} onClick={() => void act(job, 'complete')}>Mark complete</button>}
+          <Link className="btn btn-o" href={`/worker/chat?jobId=${job.id}`}>Open chat</Link>
+        </div>
+      </article>)}
+      {error && <p role="alert" style={{ color: '#b3162b' }}>{error}</p>}
+      <p className="xs soft">Signed into the seeded demo worker account: Aslam Khan. Data is read from your backend.</p>
+    </main>
+  </Screen></Stage>;
 }

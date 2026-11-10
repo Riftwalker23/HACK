@@ -1,196 +1,73 @@
 'use client';
 
-/** C5 · Live job status — `C5-Live.dc.html` on the canvas. */
-
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Stage from '@/components/stage';
 import { useLang } from '@/components/lang';
-import { ExitBtn, Glyph, Icon, LangSwitch, Screen } from '@/components/ui';
-import { speak } from '@/lib/speech';
+import { ExitBtn, LangSwitch, Screen } from '@/components/ui';
+import JobChat from '@/components/job-chat';
+import { api } from '@/lib/client-api';
 
-const D = {
-  ur: {
-    h: 'کام جاری ہے',
-    map: 'نقشہ: رفیق 12 منٹ دور',
-    prog: 'کام کی پیش رفت',
-    s1: 'درخواست',
-    s2: 'طے',
-    s3: 'راستے میں',
-    s4: 'مکمل',
-    status: 'راستے میں ہیں، سامان ساتھ ہے',
-    call: 'رفیق کو کال کریں',
-    play: 'وائس نوٹ سنیں',
-    see: 'دیکھیں',
-    tr: 'ترجمہ',
-    msg: '“باجی، نیا والو لے لیا ہے، دس منٹ میں پہنچ رہا ہوں۔”',
-    done: 'کام مکمل ہوگیا',
-  },
-  rm: {
-    h: 'Kaam jaari hai',
-    map: 'Naqsha: Rafiq 12 minute door',
-    prog: 'Kaam ki pesh-raft',
-    s1: 'Darkhwast',
-    s2: 'Tay',
-    s3: 'Raaste mein',
-    s4: 'Mukammal',
-    status: 'Raaste mein hain, saamaan saath hai',
-    call: 'Rafiq ko call karein',
-    play: 'Voice note sunein',
-    see: 'Dekhein',
-    tr: 'tarjuma',
-    msg: '“Baaji, naya valve le liya hai, das minute mein pohanch raha hoon.”',
-    done: 'Kaam mukammal ho gaya',
-  },
-  en: {
-    h: 'Job in progress',
-    map: 'Map: Rafiq is 12 minutes away',
-    prog: 'Job progress',
-    s1: 'Requested',
-    s2: 'Agreed',
-    s3: 'On the way',
-    s4: 'Done',
-    status: 'On the way, carrying the parts',
-    call: 'Call Rafiq',
-    play: 'Play voice note',
-    see: 'See it',
-    tr: 'translated from Urdu',
-    msg: '“I’ve picked up the new valve, reaching you in ten minutes.”',
-    done: 'Mark job as done',
-  },
+type Job = {
+  id: string; status: string; worker: { name: string; phone: string; area: string };
+  customer: { addressLabel: string }; trade: { nameEn: string };
+  description: { raw: string };
+  price: { amount: number | null; unit: string | null; confirmedByCustomer: boolean; confirmedByWorker: boolean };
 };
 
 export default function LivePage() {
   const { lang } = useLang('en');
-  const t = D[lang];
-  const [open, setOpen] = useState(true);
+  const [jobId, setJobId] = useState('');
+  const [job, setJob] = useState<Job | null>(null);
+  const [error, setError] = useState('');
+  const [working, setWorking] = useState(false);
+  const refresh = useCallback(async (id: string) => {
+    const { data } = await api<Job>(`/api/jobs/${id}`);
+    setJob(data); setError('');
+  }, []);
 
-  return (
-    <Stage>
-      <Screen skin="cust" defaultLang="en" id="s-c5" extra="rr-screen">
-        <header className="top">
-          <h1 className="b bold fx">{t.h}</h1>
-          <LangSwitch fallback="en" style={{ flex: 'none', width: '188px' }} />
-          <ExitBtn />
-        </header>
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('jobId') || (() => {
+      try { return (JSON.parse(localStorage.getItem('rr_active_job') ?? 'null') as { id?: string } | null)?.id ?? ''; } catch { return ''; }
+    })();
+    setJobId(id);
+    if (!id) { setError('No booking selected. Find a worker first.'); return; }
+    let mounted = true;
+    void refresh(id).catch((cause) => { if (mounted) setError(cause instanceof Error ? cause.message : 'Could not load job.'); });
+    const timer = window.setInterval(() => { void refresh(id).catch(() => undefined); }, 4000);
+    return () => { mounted = false; window.clearInterval(timer); };
+  }, [refresh]);
 
-        <div className="map" style={{ height: '230px', flex: 'none' }} role="img" aria-label={t.map}>
-          <svg className="bg" viewBox="0 0 390 230" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 70h390M0 170h390M110 0v230M270 0v230" stroke="var(--road)" strokeWidth="12" />
-            <path
-              d="M300 30 L270 70 L270 170 L195 170"
-              stroke="#0E6E6B"
-              strokeWidth="5"
-              strokeDasharray="10 8"
-              fill="none"
-            />
-          </svg>
-          <span className="me" style={{ left: '50%', top: '74%' }} />
-          <span
-            className="pin tr-plum rr-drop"
-            style={{ left: '69%', top: '46%', width: '44px', height: '44px', background: 'var(--c)', color: 'var(--g)' }}
-          >
-            <Glyph name="g-plum" />
-          </span>
-          <span
-            className="chip"
-            style={{
-              position: 'absolute',
-              insetBlockStart: '12px',
-              insetInlineStart: '12px',
-              minHeight: '40px',
-              fontSize: '14px',
-            }}
-          >
-            <b className="num">12 min</b> · <span className="num">2.1 km</span>
-          </span>
+  async function confirmPrice() {
+    if (!jobId) return;
+    setWorking(true); setError('');
+    try { await api(`/api/jobs/${jobId}/price`, { method: 'POST', body: JSON.stringify({ mode: 'confirm', actor: 'customer', confirm: true }) }); await refresh(jobId); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Price confirmation failed.'); }
+    finally { setWorking(false); }
+  }
+
+  const labels = lang === 'ur'
+    ? { title: 'آپ کی درخواست', status: 'موجودہ حالت', waiting: 'کاریگر کے جواب کا انتظار ہے…', price: 'قیمت منظور کریں', progress: 'کام مکمل' }
+    : { title: 'Your booking', status: 'Current status', waiting: 'Waiting for the worker to respond…', price: 'Agree to this price', progress: 'Job progress' };
+
+  return <Stage><Screen skin="cust" defaultLang="en" id="s-c5" extra="rr-screen">
+    <header className="top"><h1 className="b bold fx">{labels.title}</h1><LangSwitch fallback="en" style={{ flex: 'none', width: '188px' }} /><ExitBtn /></header>
+    <main className="col g12 fx px" style={{ overflowY: 'auto', paddingBottom: 18 }}>
+      {error && <p role="alert" style={{ color: '#b3162b' }}>{error}</p>}
+      {!job && !error && <p>{labels.waiting}</p>}
+      {job && <>
+        <div className="card col g8" style={{ padding: 16, borderRadius: 18 }}>
+          <span className="soft">{labels.status}</span><b style={{ fontSize: 22 }}>{job.status.replaceAll('_', ' ')}</b>
+          <span>{job.trade.nameEn} · {job.description.raw}</span>
+          <span>Worker: {job.worker.name} · {job.worker.area}</span>
+          <span>Address: {job.customer.addressLabel}</span>
+          {job.price.amount !== null && <div className="row sb"><b>Rs {job.price.amount.toLocaleString()} {job.price.unit}</b>{job.price.confirmedByCustomer ? <span className="pill free">You agreed</span> : <button className="btn btn-t" disabled={working} onClick={() => void confirmPrice()}>{labels.price}</button>}</div>}
         </div>
-
-        <main className="col g12 fx px" style={{ paddingTop: '14px' }}>
-          <div className="rail sm" role="list" aria-label={t.prog}>
-            <span className="n done" role="listitem" aria-label={t.s1}>
-              <Icon name="i-send" cls="s20" />
-            </span>
-            <span className="ln done" />
-            <span className="n done" role="listitem" aria-label={t.s2}>
-              <Icon name="i-hand" cls="s20" />
-            </span>
-            <span className="ln done" />
-            <span className="n cur" role="listitem" aria-current="step" aria-label={t.s3}>
-              <Icon name="i-wrench" cls="s20" />
-            </span>
-            <span className="ln" />
-            <span className="n" role="listitem" aria-label={t.s4}>
-              <Icon name="i-flag" cls="s20" />
-            </span>
-          </div>
-          <div className="row sb" aria-hidden="true" style={{ marginTop: '-6px' }}>
-            <span className="rl soft" style={{ marginInlineStart: '-14px' }}>
-              {t.s1}
-            </span>
-            <span className="rl soft">{t.s2}</span>
-            <span className="rl" style={{ color: 'var(--roshan-text)' }}>
-              {t.s3}
-            </span>
-            <span className="rl soft" style={{ marginInlineEnd: '-14px' }}>
-              {t.s4}
-            </span>
-          </div>
-
-          <div className="card row g12 rr-pop" style={{ padding: '12px', borderRadius: '18px' }} aria-live="polite">
-            <span
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '14px',
-                background: 'var(--ttint)',
-                display: 'grid',
-                placeItems: 'center',
-                font: "800 16px/1 'Plus Jakarta Sans', sans-serif",
-                flex: 'none',
-              }}
-            >
-              RA
-            </span>
-            <div className="col fx">
-              <span className="b bold">Rafiq Ahmed</span>
-              <span className="l soft">{t.status}</span>
-            </div>
-            <button type="button" className="btn btn-t" aria-label={t.call} style={{ width: '52px', padding: 0 }}>
-              <Icon name="i-phone" cls="s24" />
-            </button>
-          </div>
-
-          <div className="col g8">
-            <div className="vn rr-rise">
-              <button type="button" className="play" aria-label={t.play} onClick={() => speak(t.msg, lang)}>
-                <Icon name="i-play" cls="s24" />
-              </button>
-              <div className="wv" aria-hidden="true">
-                {Array.from({ length: 18 }, (_, i) => (
-                  <i key={i} />
-                ))}
-              </div>
-              <span className="l num">0:06</span>
-            </div>
-            <div className="row g8">
-              <button type="button" className="see" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-                <Icon name="i-eye" cls="s20" />
-                {t.see}
-              </button>
-              <span className="ai">AI · {t.tr}</span>
-            </div>
-            {open && <p className="tr rr-pop">{t.msg}</p>}
-          </div>
-        </main>
-
-        <div className="dock">
-          <Link className="btn btn-o" href="/customer/review">
-            <Icon name="i-chk" cls="s24" style={{ color: 'var(--accept)' }} />
-            {t.done}
-          </Link>
-        </div>
-      </Screen>
-    </Stage>
-  );
+        <div className="col g8"><b>{labels.progress}</b><div className="row sb l"><span>Requested</span><span>Accepted</span><span>In progress</span><span>Done</span></div><div className="rail"><span className="n done"/><span className="ln done"/><span className={`n ${['ACCEPTED','PRICE_AGREED','IN_PROGRESS','COMPLETED'].includes(job.status) ? 'done' : ''}`}/><span className="ln"/><span className={`n ${job.status === 'IN_PROGRESS' || job.status === 'COMPLETED' ? 'done' : ''}`}/><span className="ln"/><span className={`n ${job.status === 'COMPLETED' ? 'done' : ''}`}/></div></div>
+        <JobChat jobId={job.id} actor="customer" />
+        {job.status === 'COMPLETED' && <Link className="btn btn-t" href={`/customer/review?jobId=${job.id}`}>Leave a review</Link>}
+      </>}
+      {!job && <Link className="btn btn-t" href="/customer/describe">Find a worker</Link>}
+    </main>
+  </Screen></Stage>;
 }
