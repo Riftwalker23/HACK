@@ -15,6 +15,7 @@ import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
 import JobChat from '@/components/job-chat';
 import { ErrorState, LoadingState, OfflineState, useOnline } from '@/components/customer/states';
 import { api, loadActiveJob } from '@/lib/client-api';
+import { readQueryParam, useBrowserValue } from '@/lib/customer/client-store';
 
 type Job = {
   id: string; status: 'REQUESTED' | 'ACCEPTED' | 'PRICE_AGREED' | 'IN_PROGRESS' | 'COMPLETED' | 'DECLINED' | 'CANCELLED';
@@ -50,7 +51,8 @@ export default function LivePage() {
   const t = D[lang];
   const router = useRouter();
   const online = useOnline();
-  const [jobId, setJobId] = useState('');
+  // The URL's ?jobId, else the job this browser last booked; '' on the server render.
+  const jobId = useBrowserValue(() => readQueryParam('jobId') || loadActiveJob<{ id?: string }>()?.id || '', '');
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
@@ -65,16 +67,14 @@ export default function LivePage() {
   }, [router]);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('jobId') || loadActiveJob<{ id?: string }>()?.id || '';
-    setJobId(id);
+    const id = jobId;
     if (!id) return;
     let stopped = false;
-    let timer: number | undefined;
-    const tick = () => refresh(id).then((j) => { if (['COMPLETED', 'DECLINED', 'CANCELLED'].includes(j.status) && timer) window.clearInterval(timer); }).catch((c) => { if (!stopped) setError(c instanceof Error ? c.message : 'Could not load the booking.'); });
+    const tick = () => refresh(id).then((j) => { if (['COMPLETED', 'DECLINED', 'CANCELLED'].includes(j.status)) window.clearInterval(timer); }).catch((c) => { if (!stopped) setError(c instanceof Error ? c.message : 'Could not load the booking.'); });
+    const timer = window.setInterval(() => void tick(), 4000);
     void tick();
-    timer = window.setInterval(() => void tick(), 4000);
-    return () => { stopped = true; if (timer) window.clearInterval(timer); };
-  }, [refresh]);
+    return () => { stopped = true; window.clearInterval(timer); };
+  }, [refresh, jobId]);
 
   async function act(path: 'price' | 'cancel', payload: object) {
     setWorking(true); setError('');

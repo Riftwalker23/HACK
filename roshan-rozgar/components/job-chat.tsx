@@ -10,18 +10,19 @@ export default function JobChat({ jobId, actor }: { jobId: string; actor: 'worke
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
-  const refresh = useCallback(async () => {
+  /** Fetches the thread; callers set state once it resolves. */
+  const fetchMessages = useCallback(async () => {
     const { data } = await api<{ messages: ChatMessage[] }>(`/api/messages?jobId=${jobId}`);
-    setMessages(data.messages);
+    return data.messages;
   }, [jobId]);
 
   useEffect(() => {
-    let timer: number | undefined;
     let mounted = true;
-    void refresh().catch((cause) => { if (mounted) setError(cause instanceof Error ? cause.message : 'Could not load chat.'); });
-    timer = window.setInterval(() => { void refresh().catch(() => undefined); }, 4000);
-    return () => { mounted = false; if (timer !== undefined) window.clearInterval(timer); };
-  }, [refresh]);
+    const load = () => fetchMessages().then((rows) => { if (mounted) setMessages(rows); });
+    void load().catch((cause) => { if (mounted) setError(cause instanceof Error ? cause.message : 'Could not load chat.'); });
+    const timer = window.setInterval(() => { void load().catch(() => undefined); }, 4000);
+    return () => { mounted = false; window.clearInterval(timer); };
+  }, [fetchMessages]);
 
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,7 +30,7 @@ export default function JobChat({ jobId, actor }: { jobId: string; actor: 'worke
     setSending(true); setError('');
     try {
       await api('/api/messages', { method: 'POST', body: JSON.stringify({ jobId, sender: actor, kind: 'text', text: text.trim(), language: actor === 'worker' ? 'ur' : 'en' }) });
-      setText(''); await refresh();
+      setText(''); setMessages(await fetchMessages());
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Message could not be sent.'); }
     finally { setSending(false); }
   }

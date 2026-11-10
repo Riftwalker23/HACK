@@ -16,6 +16,7 @@ import { ExitBtn, Glyph, Icon, LangSwitch, Screen, Shape } from '@/components/ui
 import { AiChip } from '@/components/customer/ai-chip';
 import { ErrorState, LoadingState, OfflineState, useOnline } from '@/components/customer/states';
 import { api } from '@/lib/client-api';
+import { useQueryParam } from '@/lib/customer/client-store';
 
 type Profile = {
   id: string; name: string; phone: string; area: string; status: 'FREE' | 'BUSY' | 'OFF';
@@ -45,23 +46,29 @@ export default function ProfilePage() {
   const { lang } = useLang('en');
   const t = D[lang];
   const online = useOnline();
-  const [workerId, setWorkerId] = useState<string | null>(null);
+  // undefined until the URL has been read on the client (server render + hydration).
+  const workerId = useQueryParam('workerId');
   const [w, setW] = useState<Profile | null>(null);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(true);
+  // No worker id in the URL means there is nothing to load.
+  const loading = workerId === undefined || (!!workerId && fetching);
 
-  const load = useCallback(async (id: string) => {
-    setLoading(true); setError('');
-    try { setW((await api<Profile>(`/api/workers/${id}`)).data); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load this profile.'); }
-    finally { setLoading(false); }
-  }, []);
+  /** Fetches the profile; every state update happens once the request settles. */
+  const fetchProfile = useCallback((id: string) => api<Profile>(`/api/workers/${id}`)
+    .then(({ data }) => setW(data))
+    .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'Could not load this profile.'))
+    .finally(() => setFetching(false)), []);
+
+  /** Retry button: show loading and clear the old error, then fetch again. */
+  const load = useCallback((id: string) => {
+    setFetching(true); setError('');
+    void fetchProfile(id);
+  }, [fetchProfile]);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('workerId');
-    setWorkerId(id);
-    if (id) void load(id); else setLoading(false);
-  }, [load]);
+    if (workerId) void fetchProfile(workerId);
+  }, [workerId, fetchProfile]);
 
   const topbar = (
     <header className="top">

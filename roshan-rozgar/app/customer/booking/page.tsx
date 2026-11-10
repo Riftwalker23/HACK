@@ -15,6 +15,7 @@ import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
 import { AiChip } from '@/components/customer/ai-chip';
 import { ErrorState, LoadingState, OfflineState, useOnline } from '@/components/customer/states';
 import { api, getSession, loadSearch, saveActiveJob, signInDemo, type DemoUser } from '@/lib/client-api';
+import { useNowMinute, useQueryParam } from '@/lib/customer/client-store';
 
 type Worker = { id: string; name: string; status: 'FREE' | 'BUSY' | 'OFF'; rateMin: number; rateMax: number };
 
@@ -31,7 +32,9 @@ export default function BookingPage() {
   const t = D[lang];
   const router = useRouter();
   const online = useOnline();
-  const [workerId, setWorkerId] = useState<string | null>(null);
+  // undefined until the URL has been read on the client (server render + hydration).
+  const workerId = useQueryParam('workerId');
+  const now = useNowMinute();
   const [worker, setWorker] = useState<Worker | null>(null);
   const [customer, setCustomer] = useState<DemoUser | null>(null);
   const [slot, setSlot] = useState(0);
@@ -41,26 +44,27 @@ export default function BookingPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(true);
+  // No worker id in the URL means there is nothing to load.
+  const loading = workerId === undefined || (!!workerId && fetching);
   const search = typeof window === 'undefined' ? null : loadSearch();
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('workerId');
-    setWorkerId(id);
-    if (!id) { setLoading(false); return; }
+    const id = workerId;
+    if (!id) return;
     void (async () => {
       try {
         const who = getSession('customer') ?? await signInDemo('customer');
         setCustomer(who); setAddress(who.addressLabel ?? '');
         setWorker((await api<Worker>(`/api/workers/${id}`)).data);
       } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load.'); }
-      finally { setLoading(false); }
+      finally { setFetching(false); }
     })();
-  }, []);
+  }, [workerId]);
 
   const slots = [
     { label: t.now, hint: '~15 min' },
-    { label: t.hour, hint: clock(Date.now() + 3_600_000) },
+    { label: t.hour, hint: clock(now + 3_600_000) },
     { label: t.morning, hint: '10:00 am' },
   ];
   const description = search?.description || problem.trim();

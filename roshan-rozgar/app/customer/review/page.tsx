@@ -15,6 +15,7 @@ import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
 import { AiChip } from '@/components/customer/ai-chip';
 import { ErrorState, LoadingState, OfflineState, useOnline } from '@/components/customer/states';
 import { api } from '@/lib/client-api';
+import { useQueryParam } from '@/lib/customer/client-store';
 
 type Tag = { id: string; labelEn: string; labelUr: string; labelRoman: string; sentiment: 'positive' | 'negative' };
 type Job = { id: string; status: string; worker: { name: string }; trade: { nameEn: string }; description: { raw: string } };
@@ -30,7 +31,8 @@ export default function ReviewPage() {
   const { lang } = useLang('en');
   const t = D[lang];
   const online = useOnline();
-  const [jobId, setJobId] = useState<string | null>(null);
+  // undefined until the URL has been read on the client (server render + hydration).
+  const jobId = useQueryParam('jobId');
   const [job, setJob] = useState<Job | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [stars, setStars] = useState(0);
@@ -40,20 +42,21 @@ export default function ReviewPage() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
   const [already, setAlready] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(true);
+  // No job id in the URL means there is nothing to load.
+  const loading = jobId === undefined || (!!jobId && fetching);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('jobId');
-    setJobId(id);
-    if (!id) { setLoading(false); return; }
+    const id = jobId;
+    if (!id) return;
     void (async () => {
       try {
         const [j, tg] = await Promise.all([api<Job>(`/api/jobs/${id}`), api<Tag[] | { tags: Tag[] }>('/api/reviews/tags')]);
         setJob(j.data); setTags(Array.isArray(tg.data) ? tg.data : tg.data.tags ?? []);
       } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load.'); }
-      finally { setLoading(false); }
+      finally { setFetching(false); }
     })();
-  }, []);
+  }, [jobId]);
 
   const label = (x: Tag) => (lang === 'ur' ? x.labelUr : lang === 'rm' ? x.labelRoman : x.labelEn);
 
