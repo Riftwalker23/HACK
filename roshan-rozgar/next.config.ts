@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
    * stripping the route segment config from every handler under app/api.
    * `partialPrefetching` goes with it; it only applies to cached components.
    */
+  /**
+   * Load PGlite (the embedded Postgres used when DATABASE_URL is unset) from
+   * node_modules instead of bundling it. It locates its WASM and data files
+   * with `new URL(..., import.meta.url)`; webpack (`next dev --webpack`)
+   * rewrites those into objects Node's fs cannot read ("The path argument must
+   * be of type string ... Received an instance of URL"), which broke every
+   * route in the zero-credential local setup.
+   */
+  serverExternalPackages: ["@electric-sql/pglite"],
   turbopack: {
     rules: {
       "*.css": {

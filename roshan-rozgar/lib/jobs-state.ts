@@ -54,13 +54,19 @@ export type TransitionRule = {
 /**
  * Every legal edge, and the only roles allowed to travel it.
  *
- * A status with an empty list is terminal. `CANCELLED` is reachable from the
- * three pre-work statuses only: once a worker is at the house and working, the
- * job is completed, not un-booked.
+ * A status with an empty list is terminal. `CANCELLED` is reachable before work
+ * starts only: once a worker is at the house and working, the job is completed,
+ * not un-booked. SCHEDULED is not an active status: a booked later slot does not
+ * occupy the worker, so he can be busy now and still hold bookings.
  */
 export const TRANSITIONS: Readonly<Record<JobStatus, readonly TransitionRule[]>> = {
   REQUESTED: [
-    { to: 'ACCEPTED', actors: ['worker'], why: 'the worker takes the job' },
+    { to: 'ACCEPTED', actors: ['worker'], why: 'the worker takes a "now" request' },
+    {
+      to: 'SCHEDULED',
+      actors: ['worker'],
+      why: 'the worker accepts a request for a later time slot — allowed even while he is busy',
+    },
     {
       to: 'DECLINED',
       actors: ['worker', 'system'],
@@ -68,16 +74,30 @@ export const TRANSITIONS: Readonly<Record<JobStatus, readonly TransitionRule[]>>
     },
     { to: 'CANCELLED', actors: ['customer'], why: 'the customer withdraws before anyone accepted' },
   ],
+  SCHEDULED: [
+    {
+      to: 'ACCEPTED',
+      actors: ['worker'],
+      why: 'the slot has come and the worker takes the job on — it now occupies him',
+    },
+    { to: 'CANCELLED', actors: ['worker', 'customer'], why: 'either side cancels the booked slot' },
+  ],
   ACCEPTED: [
     {
       to: 'PRICE_AGREED',
       actors: ['worker', 'customer'],
       why: 'both sides have confirmed the same quoted price',
     },
+    {
+      to: 'COMPLETED',
+      actors: ['worker'],
+      why: 'the worker marks the work done; an agreed price is optional',
+    },
     { to: 'CANCELLED', actors: ['worker', 'customer'], why: 'either side backs out before work starts' },
   ],
   PRICE_AGREED: [
     { to: 'IN_PROGRESS', actors: ['worker'], why: 'the worker starts work' },
+    { to: 'COMPLETED', actors: ['worker'], why: 'the worker marks the work done' },
     { to: 'CANCELLED', actors: ['worker', 'customer'], why: 'either side backs out before work starts' },
   ],
   IN_PROGRESS: [{ to: 'COMPLETED', actors: ['worker'], why: 'the worker marks the job done' }],
@@ -157,6 +177,7 @@ export type JobTimestampColumn = 'acceptedAt' | 'startedAt' | 'completedAt';
 export function timestampFor(to: JobStatus): JobTimestampColumn | null {
   switch (to) {
     case 'ACCEPTED':
+    case 'SCHEDULED':
       return 'acceptedAt';
     case 'IN_PROGRESS':
       return 'startedAt';
@@ -277,6 +298,8 @@ export type JobSummary = {
   status: JobStatus;
   /** Whether this job currently occupies its worker. */
   isActive: boolean;
+  /** ISO start of the booked hour slot, or null for a "now" job. */
+  scheduledFor: string | null;
   worker: {
     id: string;
     name: string;
@@ -321,6 +344,7 @@ export function toJobSummary(row: JobViewRow): JobSummary {
     id: row.id,
     status: row.status,
     isActive: isActive(row.status),
+    scheduledFor: iso(row.scheduledFor),
     worker: {
       id: row.workerId,
       name: row.workerName,
@@ -423,6 +447,12 @@ worker is auto-DECLINED — he has one pair of hands, so the competing requests
 are dead and the platform says so immediately rather than leaving customers
 waiting on a request that can never be filled.
 
+A request can also be for a LATER hour slot (scheduled_for). The worker may
+accept that even while he is busy: the job becomes SCHEDULED, which does not
+occupy him, and a second unique index (one_booking_per_slot) stops two accepted
+bookings sharing one worker and one hour. When the slot comes he takes it on
+(SCHEDULED -> ACCEPTED), and only then does the one-active-job index apply.
+
 ACCEPTED, PRICE_AGREED and IN_PROGRESS are the three "active" statuses, and a
 partial unique index on jobs(worker_id) covering exactly those three makes a
 second active job for one worker impossible. Two customers accepted at the same
@@ -437,7 +467,9 @@ is no edge back from PRICE_AGREED to ACCEPTED — to change an agreed price you
 cancel and re-request, so an agreed figure cannot be quietly rewritten.
 
 The worker STARTS the job (PRICE_AGREED -> IN_PROGRESS, stamping started_at) and
-COMPLETES it (-> COMPLETED, stamping completed_at). Completion, in one
+COMPLETES it (-> COMPLETED, stamping completed_at). He may also mark the work done
+straight from ACCEPTED or PRICE_AGREED: price agreement is optional, and started_at
+then falls back to accepted_at so the duration is still known. Completion, in one
 transaction, also sets the worker back to FREE and increments his
 jobs_completed, so the customer's "available now" list is correct the moment the
 response lands. Ratings are not touched here — reviews own that.

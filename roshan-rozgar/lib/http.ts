@@ -82,6 +82,11 @@ const UNIQUE_CONSTRAINTS: Array<{ name: string; code: ErrorCode; message: string
     code: 'WORKER_BUSY',
     message: 'That worker just took another job.',
   },
+  {
+    name: 'one_booking_per_slot',
+    code: 'CONFLICT',
+    message: 'That time slot was just booked by someone else. Please pick another hour.',
+  },
   { name: 'workers_phone', code: 'CONFLICT', message: 'A worker with that phone number already exists.' },
   { name: 'customers_phone', code: 'CONFLICT', message: 'A customer with that phone number already exists.' },
   { name: 'reviews_job_id', code: 'CONFLICT', message: 'That job has already been reviewed.' },

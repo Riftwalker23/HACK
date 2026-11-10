@@ -115,16 +115,16 @@ your screens with this truthful one.
 | `GET /api/trades` | — | 7 trades with `slug, nameEn, nameUr, nameRoman, color, glyph, freeWorkers` |
 | `GET /api/workers` | `lat,lng,trade,available,radiusKm,keywords,limit` | rows with `ranking:{score,reason,breakdown}`, `distance:{km,en,ur}`, `trade`, `skills`, `workPhotos`, `trustSummary` |
 | `POST /api/workers` | `{ name, phone, pin?, tradeSlug, yearsExperience, area, lat, lng, rateMin, rateMax, bioUr?, bioEn?, skills:[{labelEn,labelUr?,source?,confidence?}], photos?:[{url,aiTags?}], onboardingTranscript?, onboardedVia? }` | the created profile (`id`, `status:'FREE'`); **409** if the phone exists |
-| `GET /api/workers/:id` | — | full profile + `reviews` + `trustSummary` + `activeJob` |
+| `GET /api/workers/:id` | — | full profile + `reviews` + `trustSummary` + `activeJob` + **`bookedSlots`** (ISO starts of hours already promised) |
 | `PATCH /api/workers/:id` | `{ status?: 'FREE'\|'BUSY'\|'OFF', rateMin?, rateMax?, bioUr?, bioEn?, area?, lat?+lng? }` | updated worker; **409** if you try FREE/OFF mid-job |
 | `POST /api/workers/:id/photos` | `{ photos:[{url, aiTags?, aiProvider?}] }` | inserted rows |
-| `POST /api/jobs` | `{ customerId, workerId, descriptionRaw, descriptionSource:'text'\|'voice'\|'photo', photoUrl?, aiClassification? }` | job; **409 WORKER_BUSY** if the worker is not free |
+| `POST /api/jobs` | `{ customerId, workerId, descriptionRaw, descriptionSource:'text'\|'voice'\|'photo', photoUrl?, aiClassification?, scheduledFor? }` — `scheduledFor` = ISO start of a later hour slot (on the hour, in the future, ≤ 3 days ahead); omit for "now" | job (`scheduledFor` echoed); **409 WORKER_BUSY** for "now" when the worker is not free (`details.canScheduleLater: true`); a BUSY worker **can** be booked for a later slot; **409 CONFLICT** if that slot is already booked |
 | `GET /api/jobs` | `workerId` or `customerId`, `status=A,B,C`, `active=true` | job summaries (`meta.serverTime`) |
 | `GET /api/jobs/:id` | — | `{ id, status, worker, customer, trade, description:{raw,source,photoUrl}, ended, price:{amount,unit,includes,confirmedByWorker,confirmedByCustomer,state}, timestamps:{requestedAt,acceptedAt,startedAt,completedAt}, aiClassification, messageCount }` |
-| `POST /api/jobs/:id/accept` | `{}` | `{ job, autoDeclined }` |
+| `POST /api/jobs/:id/accept` | `{}` | `{ job, mode, autoDeclined }`. "Now" request → `ACCEPTED`, worker BUSY (`mode:'accepted'`). Later-slot request → `SCHEDULED`, allowed while busy (`mode:'scheduled'`). `SCHEDULED` → `ACCEPTED` when he takes the slot on (`mode:'activated'`; 409 WORKER_BUSY if he is mid-job) |
 | `POST /api/jobs/:id/decline` | `{ reason? }` | job |
 | `POST /api/jobs/:id/price` | propose `{ actor, amount, unit, includes? }` · confirm `{ actor, confirm:true }` | `{ job, priceState }` — both confirmed → `PRICE_AGREED` |
-| `POST /api/jobs/:id/start` · `/complete` | `{}` | `{ job, … }` (complete frees the worker) |
+| `POST /api/jobs/:id/start` · `/complete` | `{}` | `{ job, … }`. `/complete` ("mark work done") works from `ACCEPTED`, `PRICE_AGREED` or `IN_PROGRESS` — price agreement optional — and frees the worker |
 | `POST /api/jobs/:id/cancel` | `{ actor, reason? }` | job |
 | `GET /api/messages` | `jobId`, `after?`, `limit?` | `{ messages:[{id,sender,kind,transcriptUr,transcriptEn,audioUrl,durationMs,createdAt}] }` |
 | `POST /api/messages` | `{ jobId, sender, kind:'text', text, language }` | message |
@@ -134,7 +134,9 @@ your screens with this truthful one.
 | `POST /api/auth/login` | `{ phone, pin, role }` | mocked sign-in |
 
 Job state machine: `REQUESTED → ACCEPTED → PRICE_AGREED → IN_PROGRESS → COMPLETED`
-(+ `DECLINED`, `CANCELLED`). Price becomes `PRICE_AGREED` only when **both** sides have confirmed the
+(+ `DECLINED`, `CANCELLED`). A later-slot request goes `REQUESTED → SCHEDULED → ACCEPTED → …`; `SCHEDULED`
+does not occupy the worker, and one hour slot holds at most one accepted booking (DB index
+`one_booking_per_slot`). `ACCEPTED` / `PRICE_AGREED` → `COMPLETED` is allowed (price optional). Price becomes `PRICE_AGREED` only when **both** sides have confirmed the
 same figure; proposing a new number resets the other side's confirmation.
 
 **Demo identities (mock auth, PIN `0000`).** Worker `Aslam Khan` `+923001234567` (seeded, FREE).

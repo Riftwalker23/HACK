@@ -37,6 +37,8 @@ export const workerStatus = pgEnum('worker_status', ['FREE', 'BUSY', 'OFF']);
 
 export const jobStatus = pgEnum('job_status', [
   'REQUESTED',
+  /** Accepted for a later time slot: promised, but not occupying the worker now. */
+  'SCHEDULED',
   'ACCEPTED',
   'PRICE_AGREED',
   'IN_PROGRESS',
@@ -214,6 +216,11 @@ export const jobs = pgTable(
     acceptedAt: timestamp('accepted_at', { withTimezone: true }),
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    /**
+     * The hour slot the customer booked. null = "now". A worker who is busy
+     * can still be booked, and can accept, for a later slot (status SCHEDULED).
+     */
+    scheduledFor: timestamp('scheduled_for', { withTimezone: true }),
     /** Why the job ended early. Set by /decline and /cancel only; null otherwise. */
     statusReason: text('status_reason'),
     /** Who ended it early: 'worker' | 'customer' | 'system' (auto-decline). */
@@ -233,6 +240,16 @@ export const jobs = pgTable(
     uniqueIndex('one_active_job_per_worker')
       .on(t.workerId)
       .where(sql`${t.status} in ('ACCEPTED', 'PRICE_AGREED', 'IN_PROGRESS')`),
+
+    /**
+     * No two accepted bookings for one worker in the same hour slot. The
+     * predicate names only the statuses that do NOT hold a slot, so it never
+     * mentions SCHEDULED: Postgres forbids using an enum value in the same
+     * transaction that added it, and the migration adds it.
+     */
+    uniqueIndex('one_booking_per_slot')
+      .on(t.workerId, t.scheduledFor)
+      .where(sql`${t.scheduledFor} is not null and ${t.status} not in ('REQUESTED', 'DECLINED', 'CANCELLED', 'COMPLETED')`),
 
     index('jobs_worker_status_idx').on(t.workerId, t.status),
     index('jobs_customer_idx').on(t.customerId, t.requestedAt),

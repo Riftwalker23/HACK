@@ -1,0 +1,3 @@
+ALTER TYPE "public"."job_status" ADD VALUE 'SCHEDULED' BEFORE 'ACCEPTED';--> statement-breakpoint
+ALTER TABLE "jobs" ADD COLUMN "scheduled_for" timestamp with time zone;--> statement-breakpoint
+CREATE UNIQUE INDEX "one_booking_per_slot" ON "jobs" USING btree ("worker_id","scheduled_for") WHERE "jobs"."scheduled_for" is not null and "jobs"."status" not in ('REQUESTED', 'DECLINED', 'CANCELLED', 'COMPLETED');

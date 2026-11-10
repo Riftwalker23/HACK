@@ -9,7 +9,7 @@
  * booking; this stops the other half of the same lie.
  */
 
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNotNull, notInArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db/client';
 import {
@@ -52,6 +52,26 @@ async function activeJob(
   return job ?? null;
 }
 
+/**
+ * Hour slots this worker has already promised (accepted bookings, upcoming), as
+ * ISO strings, so the customer's booking screen can grey them out. The
+ * one_booking_per_slot index is what actually prevents a double booking.
+ */
+async function bookedSlots(database: Awaited<ReturnType<typeof db>>, id: string): Promise<string[]> {
+  const rows = await database
+    .select({ at: jobs.scheduledFor })
+    .from(jobs)
+    .where(
+      and(
+        eq(jobs.workerId, id),
+        isNotNull(jobs.scheduledFor),
+        gt(jobs.scheduledFor, new Date(Date.now() - 60 * 60 * 1000)),
+        notInArray(jobs.status, ['REQUESTED', 'DECLINED', 'CANCELLED', 'COMPLETED']),
+      ),
+    );
+  return rows.flatMap((r) => (r.at ? [r.at.toISOString()] : [])).sort();
+}
+
 // ---------------------------------------------------------------------------
 // GET — full public profile
 // ---------------------------------------------------------------------------
@@ -69,7 +89,7 @@ export const GET = handle(async (_req: Request, ctx: Ctx) => {
 
   if (!row) throw new ApiError('NOT_FOUND', 'No worker with that id.');
 
-  const [skills, photos, trust, recentReviews, active] = await Promise.all([
+  const [skills, photos, trust, recentReviews, active, slots] = await Promise.all([
     database.select().from(workerSkills).where(eq(workerSkills.workerId, id)),
     database.select().from(workPhotos).where(eq(workPhotos.workerId, id)),
     database.select().from(trustSummaries).where(eq(trustSummaries.workerId, id)).limit(1),
@@ -89,6 +109,7 @@ export const GET = handle(async (_req: Request, ctx: Ctx) => {
       .orderBy(desc(reviews.createdAt))
       .limit(RECENT_REVIEW_LIMIT),
     activeJob(database, id),
+    bookedSlots(database, id),
   ]);
 
   const { worker, trade } = row;
@@ -146,6 +167,7 @@ export const GET = handle(async (_req: Request, ctx: Ctx) => {
         : null,
       reviews: recentReviews,
       activeJob: active,
+      bookedSlots: slots,
     },
     { reviewsReturned: recentReviews.length, reviewLimit: RECENT_REVIEW_LIMIT },
   );

@@ -1,8 +1,11 @@
 /**
  * POST /api/jobs/:id/complete — the worker marks the job done.
  *
- * One transaction: IN_PROGRESS -> COMPLETED with completed_at stamped, the
- * worker set back to FREE, and his jobs_completed incremented. Half of that
+ * One transaction: ACCEPTED, PRICE_AGREED or IN_PROGRESS -> COMPLETED with
+ * completed_at stamped, the worker set back to FREE, and his jobs_completed
+ * incremented. A worker may mark the work done straight after accepting (price
+ * agreement is optional); started_at then falls back to accepted_at so the
+ * job's duration is still known. Half of that
  * applying would leave a worker who is permanently BUSY on a finished job —
  * precisely the inconsistency Outcome 4 is about.
  *
@@ -42,8 +45,14 @@ export const POST = handle(
       const now = new Date();
       await tx
         .update(jobs)
-        .set({ status: 'COMPLETED', completedAt: now, updatedAt: now })
-        .where(and(eq(jobs.id, jobId), eq(jobs.status, 'IN_PROGRESS')));
+        .set({
+          status: 'COMPLETED',
+          completedAt: now,
+          // Skipped "start"? Count the work from when he accepted.
+          startedAt: sql`coalesce(${jobs.startedAt}, ${jobs.acceptedAt}, now())`,
+          updatedAt: now,
+        })
+        .where(and(eq(jobs.id, jobId), eq(jobs.status, current.status)));
 
       const [worker] = await tx
         .update(workers)

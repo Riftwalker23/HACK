@@ -265,3 +265,24 @@ Finalized availability persistence and the review submission path. `npm run type
 - Free-tier quota is per model and tiny (3 test runs exhausted
   gemini-3-flash-preview for the day). GEMINI_MODEL is a comma-separated chain;
   429/404 models are benched and skipped. Enable billing before demo day.
+
+## 2026-11-10 — scheduled bookings + "mark work done" (backend)
+
+Requested by the coordinator: the worker can mark work done right after
+accepting; while busy he can accept requests for a LATER hour slot; a customer
+can book a busy worker for a later slot (hourly, today/tomorrow 8am-8pm, UI
+pending). Design keeps the one-active-job DB guarantee:
+- new status SCHEDULED (accepted later slot, NOT active) + jobs.scheduled_for;
+  unique index one_booking_per_slot (worker, slot) for accepted bookings. Its
+  predicate lists only the OLD statuses, because Postgres forbids using an enum
+  value in the transaction that adds it (drizzle runs migrations in one tx).
+- accept: now -> ACCEPTED (declines other NOW requests only); slot -> SCHEDULED
+  (declines other requests for that hour); SCHEDULED -> ACCEPTED to take it on.
+- complete from ACCEPTED/PRICE_AGREED/IN_PROGRESS; started_at falls back to
+  accepted_at so the duration is known.
+- Migration 0003 applied to Supabase (additive). Tested on a throwaway PGlite DB:
+  22/22 scheduling checks, smoke 35/35, race 22/22, verify 11/11.
+- next.config.ts: serverExternalPackages ['@electric-sql/pglite'] — under
+  `next dev --webpack` PGlite's import.meta.url file loading broke every route
+  when DATABASE_URL is unset (the README's zero-setup quick start).
+Not done yet: worker home + customer booking/results/profile/live UI for it.

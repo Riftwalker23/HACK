@@ -5,9 +5,13 @@
  * A REQUESTED job deliberately does NOT occupy the worker. Several customers
  * may request the same free worker and he picks one; the losers are
  * auto-declined when he accepts (see ./[id]/accept).
+ *
+ * A request is either for NOW (scheduledFor omitted: the worker must be FREE)
+ * or for a later HOUR SLOT (scheduledFor = the slot start). A busy worker can be
+ * booked for a later slot — "busy now, free at 4pm" is a booking, not a no.
  */
 
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, notInArray } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from '@/db/client';
@@ -29,6 +33,11 @@ const createSchema = z.object({
   descriptionSource: z.enum(['text', 'voice', 'photo']).default('text'),
   /** May be a storage URL or a local blob path, so it is not URL-validated. */
   photoUrl: z.string().min(1).max(2000).optional(),
+  /**
+   * ISO start of a later hour slot ("2026-11-11T10:00:00.000Z"). Omit for now.
+   * Must be on the hour, in the future, and within the next three days.
+   */
+  scheduledFor: z.string().datetime({ offset: true }).optional(),
   /**
    * Classifier output, passed through from the AI layer by the caller. This
    * route never calls a model itself — all AI-derived values arrive as input.
@@ -71,27 +80,56 @@ export const POST = handle(async (req: Request) => {
       .limit(1);
     if (!customer) throw new ApiError('NOT_FOUND', 'No such customer.');
 
-    // Both of these are UX guards, not the consistency guarantee: they stop a
-    // customer wasting a tap on someone who cannot come. The guarantee is the
-    // partial unique index, and it only bites at accept time.
-    if (worker.status !== 'FREE') {
-      throw new ApiError('WORKER_BUSY', 'That worker is not available right now.', {
+    // These are UX guards, not the consistency guarantee: they stop a customer
+    // wasting a tap on someone who cannot come. The guarantees are the two
+    // partial unique indexes, and they bite at accept time.
+    const slot = input.scheduledFor ? parseSlot(input.scheduledFor) : null;
+
+    if (worker.status === 'OFF') {
+      throw new ApiError('WORKER_BUSY', 'That worker is not taking work at the moment.', {
         workerStatus: worker.status,
       });
     }
 
-    const [held] = await tx
-      .select({ id: jobs.id, status: jobs.status })
-      .from(jobs)
-      .where(
-        and(eq(jobs.workerId, input.workerId), inArray(jobs.status, [...ACTIVE_JOB_STATUSES])),
-      )
-      .limit(1);
-    if (held) {
-      throw new ApiError('WORKER_BUSY', 'That worker is already on a job.', {
-        activeJobId: held.id,
-        activeJobStatus: held.status,
-      });
+    if (!slot) {
+      if (worker.status !== 'FREE') {
+        throw new ApiError('WORKER_BUSY', 'That worker is busy right now. You can book a later time.', {
+          workerStatus: worker.status,
+          canScheduleLater: true,
+        });
+      }
+      const [held] = await tx
+        .select({ id: jobs.id, status: jobs.status })
+        .from(jobs)
+        .where(
+          and(eq(jobs.workerId, input.workerId), inArray(jobs.status, [...ACTIVE_JOB_STATUSES])),
+        )
+        .limit(1);
+      if (held) {
+        throw new ApiError('WORKER_BUSY', 'That worker is already on a job. You can book a later time.', {
+          activeJobId: held.id,
+          activeJobStatus: held.status,
+          canScheduleLater: true,
+        });
+      }
+    } else {
+      // Someone already holds this hour with him.
+      const [taken] = await tx
+        .select({ id: jobs.id })
+        .from(jobs)
+        .where(
+          and(
+            eq(jobs.workerId, input.workerId),
+            eq(jobs.scheduledFor, slot),
+            notInArray(jobs.status, ['REQUESTED', 'DECLINED', 'CANCELLED', 'COMPLETED']),
+          ),
+        )
+        .limit(1);
+      if (taken) {
+        throw new ApiError('CONFLICT', 'That time slot is already booked. Please pick another hour.', {
+          scheduledFor: slot.toISOString(),
+        });
+      }
     }
 
     const [row] = await tx
@@ -106,6 +144,7 @@ export const POST = handle(async (req: Request) => {
         descriptionSource: input.descriptionSource,
         photoUrl: input.photoUrl ?? null,
         aiClassification: input.aiClassification ?? null,
+        scheduledFor: slot,
       })
       .returning({ id: jobs.id });
 
@@ -187,6 +226,21 @@ export const GET = handle(async (req: Request) => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** A bookable slot: on the hour, in the future, and at most three days ahead. */
+function parseSlot(value: string): Date {
+  const slot = new Date(value);
+  const now = Date.now();
+  if (Number.isNaN(slot.getTime())) throw new ApiError('BAD_REQUEST', 'scheduledFor is not a valid time.');
+  if (slot.getUTCMinutes() !== 0 || slot.getUTCSeconds() !== 0 || slot.getUTCMilliseconds() !== 0) {
+    throw new ApiError('BAD_REQUEST', 'scheduledFor must be on the hour (e.g. 10:00, not 10:30).');
+  }
+  if (slot.getTime() <= now) throw new ApiError('BAD_REQUEST', 'That time has already passed.');
+  if (slot.getTime() > now + 3 * 24 * 60 * 60 * 1000) {
+    throw new ApiError('BAD_REQUEST', 'Bookings can be made at most three days ahead.');
+  }
+  return slot;
+}
 
 function uuidParse(value: string, field: string): string {
   const parsed = uuidParam.safeParse(value);

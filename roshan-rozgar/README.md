@@ -135,17 +135,21 @@ POST /api/auth/login                  { phone, pin, role } -> user (MOCKED: no s
 
 GET  /api/workers                     ranked search: lat, lng, trade, available, radiusKm, keywords
 POST /api/workers                     create from an extracted voice profile (transactional)
-GET  /api/workers/[id]                full profile + skills + photos + trust + recent reviews
+GET  /api/workers/[id]                full profile + skills + photos + trust + recent reviews + bookedSlots
 PATCH /api/workers/[id]               availability + editable fields (refuses to lie about status)
 POST /api/workers/[id]/photos         attach work photos
 
-POST /api/jobs                        create request      GET /api/jobs  list (polling fallback)
+POST /api/jobs                        create request: now, or a later hour slot via scheduledFor (a BUSY worker
+                                      can be booked for later)      GET /api/jobs  list (polling fallback)
 GET  /api/jobs/[id]
-POST /api/jobs/[id]/accept            transactional: job ACCEPTED + worker BUSY + auto-decline rest
+POST /api/jobs/[id]/accept            now request -> ACCEPTED + worker BUSY + decline other now-requests;
+                                      later-slot request -> SCHEDULED (allowed while busy);
+                                      SCHEDULED -> ACCEPTED when he takes the booked slot on
 POST /api/jobs/[id]/decline           optional { reason } — stored; job responses carry ended: { by, reason }
 POST /api/jobs/[id]/price             propose / confirm -> PRICE_AGREED when both agree
 POST /api/jobs/[id]/start
-POST /api/jobs/[id]/complete          transactional: COMPLETED + worker FREE + jobsCompleted++
+POST /api/jobs/[id]/complete          from ACCEPTED, PRICE_AGREED or IN_PROGRESS (price optional):
+                                      COMPLETED + worker FREE + jobsCompleted++
 POST /api/jobs/[id]/cancel
 
 GET  /api/messages                    ?jobId&after&limit — oldest-first polling fallback
