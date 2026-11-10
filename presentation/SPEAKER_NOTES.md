@@ -2,14 +2,14 @@
 
 Deck: `Roshan_Rozgar_Pitch.pptx` (editable) · `Roshan_Rozgar_Pitch.pdf` (backup). All product images in `screenshots/` are real captures of the app in this repo, run locally with seeded data and no AI keys (so AI results show the app's own "demo data" label).
 
-**Before presenting:** replace `[Team name]` on slides 1 and 16. Target time: about 5 minutes for slides, then the live demo.
+**Team:** Compiler Society. Target time: about 5 minutes for slides, then the live demo.
 
 ## Slide 1
 **What it shows:** Title — name, Urdu wordmark, tagline, hackathon, team; real role-choice and results screens.
 
 **Say:**
 
-> Assalam-o-Alaikum. We are [team name], and this is Roshan Rozgar.
+> Assalam-o-Alaikum. We are Compiler Society, and this is Roshan Rozgar.
 >
 > In one sentence: it is the job platform that doesn't ask a worker to read.
 >
