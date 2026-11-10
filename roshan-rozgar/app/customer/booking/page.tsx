@@ -20,9 +20,9 @@ import { useNowMinute, useQueryParam } from '@/lib/customer/client-store';
 type Worker = { id: string; name: string; status: 'FREE' | 'BUSY' | 'OFF'; rateMin: number; rateMax: number };
 
 const D: Record<Lang, Record<string, string>> = {
-  ur: { h: 'بکنگ کی تصدیق', close: 'بند کریں', when: 'کب؟', now: 'ابھی', hour: '1 گھنٹے میں', morning: 'کل صبح', addr: 'پتہ', change: 'بدلیں', done: 'ٹھیک ہے', note: 'مسئلہ', price: 'قیمت', priceNote: 'درست قیمت کاریگر کے قبول کرنے کے بعد چیٹ میں طے ہوگی۔ ابھی کچھ نہیں لیا جائے گا۔', band: 'عام قیمت', confirm: 'درخواست بھیجیں', sending: 'بھیج رہے ہیں…', busyTitle: 'یہ کاریگر ابھی دوسرے کام پر چلا گیا', busyBtn: 'دوسرا کاریگر چنیں', needText: 'براہ کرم مسئلہ لکھیں', understood: 'ہم نے یہ سمجھا', retry: 'دوبارہ کوشش کریں', loading: 'لوڈ ہو رہا ہے…', noId: 'کوئی کاریگر منتخب نہیں', toResults: 'فہرست پر جائیں', sentWith: 'یہ وقت اور پتہ درخواست کے ساتھ کاریگر کو جائے گا' },
-  rm: { h: 'Booking ki tasdeeq', close: 'Band karein', when: 'Kab?', now: 'Abhi', hour: '1 ghante mein', morning: 'Kal subah', addr: 'Pata', change: 'Badlein', done: 'Theek hai', note: 'Masla', price: 'Qeemat', priceNote: 'Sahi qeemat kaarigar ke qubool karne ke baad chat mein tay hogi. Abhi kuch nahi liya jayega.', band: 'Aam qeemat', confirm: 'Darkhwast bhejein', sending: 'Bhej rahe hain…', busyTitle: 'Yeh kaarigar abhi doosre kaam par chala gaya', busyBtn: 'Doosra kaarigar chunein', needText: 'Masla likhein', understood: 'Humne yeh samjha', retry: 'Dobara koshish karein', loading: 'Load ho raha hai…', noId: 'Koi kaarigar muntakhib nahi', toResults: 'Fehrist par jayein', sentWith: 'Yeh waqt aur pata darkhwast ke saath kaarigar ko jayega' },
-  en: { h: 'Confirm booking', close: 'Close', when: 'When?', now: 'Now', hour: 'In 1 hour', morning: 'Tomorrow morning', addr: 'Address', change: 'Change', done: 'Done', note: 'The problem', price: 'Price', priceNote: 'You and the worker agree the exact price in chat after they accept. Nothing is charged now.', band: 'Typical price', confirm: 'Send request', sending: 'Sending…', busyTitle: 'That worker just took another job', busyBtn: 'Choose another worker', needText: 'Describe the problem first', understood: 'What we understood', retry: 'Try again', loading: 'Loading…', noId: 'No worker selected', toResults: 'Back to results', sentWith: 'This time and address are sent to the worker with your request' },
+  ur: { h: 'بکنگ کی تصدیق', close: 'بند کریں', when: 'کب؟', now: 'ابھی', hour: '1 گھنٹے میں', morning: 'کل صبح', addr: 'پتہ', change: 'بدلیں', done: 'ٹھیک ہے', note: 'مسئلہ', price: 'قیمت', priceNote: 'کاریگر قبول کرے یا اپنی قیمت بتائے، آخری قیمت چیٹ میں طے ہوگی۔ ابھی کچھ نہیں لیا جائے گا۔', offer: 'آپ کی پیشکش (روپے)', offerPh: 'مثلاً 2000', offerHint: 'اختیاری — کاریگر اسے دیکھ کر قبول کرے گا یا اپنی قیمت بتائے گا۔', band: 'عام قیمت', confirm: 'درخواست بھیجیں', sending: 'بھیج رہے ہیں…', busyTitle: 'یہ کاریگر ابھی دوسرے کام پر چلا گیا', busyBtn: 'دوسرا کاریگر چنیں', needText: 'براہ کرم مسئلہ لکھیں', understood: 'ہم نے یہ سمجھا', retry: 'دوبارہ کوشش کریں', loading: 'لوڈ ہو رہا ہے…', noId: 'کوئی کاریگر منتخب نہیں', toResults: 'فہرست پر جائیں', sentWith: 'یہ وقت اور پتہ درخواست کے ساتھ کاریگر کو جائے گا' },
+  rm: { h: 'Booking ki tasdeeq', close: 'Band karein', when: 'Kab?', now: 'Abhi', hour: '1 ghante mein', morning: 'Kal subah', addr: 'Pata', change: 'Badlein', done: 'Theek hai', note: 'Masla', price: 'Qeemat', priceNote: 'Kaarigar qubool kare ya apni qeemat bataye, aakhri qeemat chat mein tay hogi. Abhi kuch nahi liya jayega.', offer: 'Aap ki pesh-kash (rupay)', offerPh: 'masalan 2000', offerHint: 'Ikhtiyari — kaarigar ise dekh kar qubool karega ya apni qeemat batayega.', band: 'Aam qeemat', confirm: 'Darkhwast bhejein', sending: 'Bhej rahe hain…', busyTitle: 'Yeh kaarigar abhi doosre kaam par chala gaya', busyBtn: 'Doosra kaarigar chunein', needText: 'Masla likhein', understood: 'Humne yeh samjha', retry: 'Dobara koshish karein', loading: 'Load ho raha hai…', noId: 'Koi kaarigar muntakhib nahi', toResults: 'Fehrist par jayein', sentWith: 'Yeh waqt aur pata darkhwast ke saath kaarigar ko jayega' },
+  en: { h: 'Confirm booking', close: 'Close', when: 'When?', now: 'Now', hour: 'In 1 hour', morning: 'Tomorrow morning', addr: 'Address', change: 'Change', done: 'Done', note: 'The problem', price: 'Price', priceNote: 'The worker can accept your offer or name their own price; the final price is agreed in chat. Nothing is charged now.', offer: 'Your offer (Rs)', offerPh: 'e.g. 2000', offerHint: 'Optional — the worker sees it with your request, then accepts it or counters.', band: 'Typical price', confirm: 'Send request', sending: 'Sending…', busyTitle: 'That worker just took another job', busyBtn: 'Choose another worker', needText: 'Describe the problem first', understood: 'What we understood', retry: 'Try again', loading: 'Loading…', noId: 'No worker selected', toResults: 'Back to results', sentWith: 'This time and address are sent to the worker with your request' },
 };
 
 const clock = (ms: number) => { const d = new Date(ms); const h = d.getHours(); return `${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`; };
@@ -41,6 +41,7 @@ export default function BookingPage() {
   const [address, setAddress] = useState('');
   const [editAddr, setEditAddr] = useState(false);
   const [problem, setProblem] = useState('');
+  const [offer, setOffer] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -68,6 +69,7 @@ export default function BookingPage() {
     { label: t.morning, hint: '10:00 am' },
   ];
   const description = search?.description || problem.trim();
+  const offerAmount = Math.round(Number(offer) || 0);
 
   async function confirm() {
     if (!customer || !worker) return;
@@ -79,7 +81,7 @@ export default function BookingPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerId: customer.id, workerId: worker.id,
-          descriptionRaw: `${description}\n\nPreferred time: ${slots[slot].label}\nAddress: ${address || customer.addressLabel || ''}`.slice(0, 1900),
+          descriptionRaw: `${description}\n\nPreferred time: ${slots[slot].label}\nAddress: ${address || customer.addressLabel || ''}${offerAmount > 0 ? `\nOffered price: Rs ${offerAmount.toLocaleString()}` : ''}`.slice(0, 1900),
           descriptionSource: search?.source ?? 'text',
           ...(search?.photoUrl ? { photoUrl: search.photoUrl } : {}),
           ...(search?.classification ? { aiClassification: search.classification } : {}),
@@ -91,6 +93,8 @@ export default function BookingPage() {
         throw new Error(payload.error?.message ?? 'Could not send the request.');
       }
       saveActiveJob(payload.data);
+      // Remembered so the live screen can send it as the proposed price the moment the worker accepts.
+      try { if (offerAmount > 0) localStorage.setItem(`rr_offer_${payload.data.id}`, String(offerAmount)); } catch { /* the offer is also in the request text */ }
       router.push(`/customer/live?jobId=${payload.data.id}`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not send the request.'); }
     finally { setSending(false); }
@@ -164,6 +168,10 @@ export default function BookingPage() {
 
           <div className="card col g8" style={{ padding: 12, borderRadius: 16 }} aria-label={t.price}>
             <div className="row sb"><span className="l bold">{t.band}</span><b className="num" dir="ltr">Rs {worker.rateMin.toLocaleString()}–{worker.rateMax.toLocaleString()}</b></div>
+            <label className="col g8 l bold">{t.offer}
+              <input inputMode="numeric" value={offer} onChange={(e) => setOffer(e.target.value.replace(/[^0-9]/g, ''))} maxLength={7} placeholder={t.offerPh} dir="ltr" style={{ minHeight: 52, border: '2px solid var(--line)', borderRadius: 14, padding: '0 14px', font: "700 20px 'Plus Jakarta Sans', sans-serif" }} />
+              <span className="xs soft" style={{ fontWeight: 400 }}>{t.offerHint}</span>
+            </label>
             <p className="l soft">{t.priceNote}</p>
           </div>
 

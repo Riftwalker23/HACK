@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Stage from '@/components/stage';
 import { useLang, type Lang } from '@/components/lang';
@@ -8,7 +9,7 @@ import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
 import { AiChip, aiProvider } from '@/components/customer/ai-chip';
 import { Wave } from '@/components/voice/wave';
 import { useVoiceInput, type Transcript } from '@/lib/voice/use-voice-input';
-import { api, getSession, saveSearch, signInDemo, type Classification } from '@/lib/client-api';
+import { api, getSession, saveSearch, type Classification } from '@/lib/client-api';
 import { useBrowserValue } from '@/lib/customer/client-store';
 
 type Upload = { url: string; kind: string; bytes: number };
@@ -48,6 +49,11 @@ export default function DescribePage() {
   // The saved session's address, read during render (empty on the server render).
   const where = useBrowserValue(() => getSession('customer')?.addressLabel ?? '', '');
   const inBrowser = useBrowserValue(() => true, false);
+
+  // First visit: no saved profile yet, so collect name + location before anything else.
+  useEffect(() => {
+    if (!getSession('customer')) router.replace('/customer/setup');
+  }, [router]);
 
   // ---- Speak mode ----
   const [speakLang, setSpeakLang] = useState<'ur' | 'en'>('ur');
@@ -102,7 +108,6 @@ export default function DescribePage() {
     setError('');
     setBusy(true);
     try {
-      await signInDemo('customer');
       saveSearch({ description: spokenText(heard), source: 'voice', classification: { ...voiceResult.data, provider: voiceResult.provider ?? voiceResult.data.provider } });
       router.push('/customer/results');
     } catch (cause) {
@@ -126,7 +131,6 @@ export default function DescribePage() {
     }
     setBusy(true);
     try {
-      await signInDemo('customer');
       let photoUrl: string | undefined;
       if (file) {
         const form = new FormData();
@@ -161,7 +165,7 @@ export default function DescribePage() {
     <Stage>
       <Screen skin="cust" defaultLang="en" id="s-c1" extra="rr-screen">
         <header className="top">
-          <span className="row g4 l bold fx"><Icon name="i-pin" cls="s20 tl" /> {where || '—'}</span>
+          <Link href="/customer/setup" className="row g4 l bold fx" style={{ minWidth: 0, textDecoration: 'none' }} aria-label="Change location"><Icon name="i-pin" cls="s20 tl" /> {where || '—'} <Icon name="i-pen" cls="s20" /></Link>
           <LangSwitch fallback="en" style={{ flex: 'none', width: '188px' }} />
           <ExitBtn />
         </header>
