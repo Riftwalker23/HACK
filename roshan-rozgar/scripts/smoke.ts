@@ -61,8 +61,27 @@ async function api<T>(
 // Loose shapes — the smoke test should survive additive API changes.
 type Id = { id: string };
 type Health = { driver: string; stubbed: boolean; counts: Record<string, number>; providers: Array<{ name: string; available: boolean }> };
-type WorkerRow = Id & { name: string; status: string; distanceKm?: number; rankingReason?: string; trade?: { slug: string } };
+type WorkerRow = Id & {
+  name: string;
+  status: string;
+  distanceKm?: number;
+  // The search endpoint nests the score, its per-term breakdown and the
+  // generated one-line explanation under `ranking`.
+  ranking?: { score: number; reason: string; breakdown: Record<string, unknown> };
+  trade?: { slug: string };
+};
 type JobRow = Id & { status: string; workerId: string; priceState?: string };
+
+/**
+ * POST /api/jobs returns the job view directly, while the transition
+ * endpoints wrap it as { job, ... } so they can report extra context (how
+ * many competing requests were auto-declined, the worker's new availability).
+ * Accept either shape rather than coupling the test to one.
+ */
+function jobOf(body: Envelope<unknown>): JobRow | undefined {
+  const data = body.data as (JobRow & { job?: JobRow }) | null;
+  return data?.job ?? data ?? undefined;
+}
 
 async function main(): Promise<void> {
   console.log(`Roshan Rozgar — smoke test against ${BASE}\n${'='.repeat(60)}`);
@@ -160,12 +179,16 @@ async function main(): Promise<void> {
   check('search returned at least one available worker', results.length > 0, results.length);
   check('every result is FREE when available=true', results.every((w) => w.status === 'FREE'));
   check('results carry a distance', results.every((w) => typeof w.distanceKm === 'number'));
-  check('results carry a human ranking reason', results.every((w) => Boolean(w.rankingReason)), results[0]);
+  check(
+    'results carry a human ranking reason',
+    results.every((w) => Boolean(w.ranking?.reason)),
+    results[0]?.ranking,
+  );
   check(
     'results are ordered nearest-best first',
     results.length < 2 || (results[0].distanceKm ?? 0) <= (results[results.length - 1].distanceKm ?? 0) + 20,
   );
-  if (results[0]) console.log(`        top: ${results[0].name} — "${results[0].rankingReason}"`);
+  if (results[0]) console.log(`        top: ${results[0].name} — "${results[0].ranking?.reason}"`);
 
   // The electrician we just created should be findable on his own trade.
   const mine = await api<WorkerRow[]>(
@@ -203,7 +226,11 @@ async function main(): Promise<void> {
 
     if (job?.id) {
       const accepted = await api<JobRow>('POST', `/api/jobs/${job.id}/accept`);
-      check('worker can accept the job', accepted.status === 200 && accepted.body.data?.status === 'ACCEPTED', accepted.body);
+      check(
+        'worker can accept the job',
+        accepted.status === 200 && jobOf(accepted.body)?.status === 'ACCEPTED',
+        accepted.body,
+      );
 
       const afterAccept = await api<WorkerRow>('GET', `/api/workers/${workerId}`);
       check('accepting flipped the worker to BUSY', afterAccept.body.data?.status === 'BUSY', afterAccept.body.data?.status);
@@ -229,13 +256,13 @@ async function main(): Promise<void> {
       });
       check('worker can propose a price', priceW.status === 200, priceW.body);
       const priceC = await api<JobRow>('POST', `/api/jobs/${job.id}/price`, { actor: 'customer', confirm: true });
-      check('customer confirming moves to PRICE_AGREED', priceC.body.data?.status === 'PRICE_AGREED', priceC.body.data);
+      check('customer confirming moves to PRICE_AGREED', jobOf(priceC.body)?.status === 'PRICE_AGREED', priceC.body.data);
 
       const started = await api<JobRow>('POST', `/api/jobs/${job.id}/start`);
-      check('job can start', started.body.data?.status === 'IN_PROGRESS', started.body.data);
+      check('job can start', jobOf(started.body)?.status === 'IN_PROGRESS', started.body.data);
 
       const completed = await api<JobRow>('POST', `/api/jobs/${job.id}/complete`);
-      check('job can complete', completed.body.data?.status === 'COMPLETED', completed.body.data);
+      check('job can complete', jobOf(completed.body)?.status === 'COMPLETED', completed.body.data);
 
       const afterComplete = await api<WorkerRow>('GET', `/api/workers/${workerId}`);
       check('completing freed the worker again', afterComplete.body.data?.status === 'FREE', afterComplete.body.data?.status);
@@ -276,6 +303,14 @@ async function main(): Promise<void> {
   }
 
   // -------------------------------------------------------------------------
+  // The test worker is real data in a real database. Park him OFF duty so
+  // repeated smoke runs never leave a "(smoke)" row showing up in a live demo
+  // search. Run `npm run db:reset && npm run setup` for a pristine world.
+  if (workerId) {
+    const parked = await api<WorkerRow>('PATCH', `/api/workers/${workerId}`, { status: 'OFF' });
+    check('the smoke worker was parked OFF duty', parked.body.data?.status === 'OFF', parked.body);
+  }
+
   console.log(`\n${'='.repeat(60)}`);
   console.log(`${passed} passed, ${failed} failed`);
   if (failed) {

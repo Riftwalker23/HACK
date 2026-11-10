@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { transcribe } from '@/lib/ai';
 import { ApiError, body, handle, ok } from '@/lib/http';
+import { getLocalUpload } from '@/lib/storage';
 
 // No `runtime` / `dynamic` segment config: next.config.ts enables
 // `cacheComponents`, and Next 16 fails the build on both. Node is already the
@@ -17,11 +18,16 @@ import { ApiError, body, handle, ok } from '@/lib/http';
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
-const jsonSchema = z.object({
-  audioBase64: z.string().min(1),
-  mimeType: z.string().min(1).default('audio/webm'),
-  language: z.enum(['ur', 'en']).optional(),
-});
+const jsonSchema = z
+  .object({
+    audioBase64: z.string().optional(),
+    mimeType: z.string().default('audio/webm').optional(),
+    audioUrl: z.string().optional(),
+    language: z.enum(['ur', 'en']).optional(),
+  })
+  .refine((v) => Boolean(v.audioBase64) || Boolean(v.audioUrl), {
+    message: 'Provide `audioBase64` or `audioUrl`.',
+  });
 
 export const POST = handle(async (req: Request) => {
   const declared = Number(req.headers.get('content-length') ?? 0);
@@ -36,9 +42,9 @@ export const POST = handle(async (req: Request) => {
 
   if (contentType.includes('multipart/form-data')) {
     const form = await req.formData();
-    const file = form.get('audio');
+    const file = form.get('audio') ?? form.get('file');
     if (!(file instanceof Blob)) {
-      throw new ApiError('BAD_REQUEST', 'Expected an `audio` file field.');
+      throw new ApiError('BAD_REQUEST', 'Expected an `audio` or `file` field.');
     }
     if (file.size > MAX_BYTES) {
       throw new ApiError('BAD_REQUEST', 'Audio must be 8MB or smaller.');
@@ -52,9 +58,32 @@ export const POST = handle(async (req: Request) => {
     language = parsed.success ? parsed.data : undefined;
   } else {
     const input = await body(req, jsonSchema);
-    // Buffer, not atob: base64 audio is binary and atob mangles it.
-    audio = new Uint8Array(Buffer.from(input.audioBase64, 'base64'));
-    mimeType = input.mimeType;
+
+    if (input.audioUrl) {
+      const url = input.audioUrl;
+      let buf: Buffer;
+      mimeType = input.mimeType ?? 'audio/webm';
+
+      if (url.includes('/api/upload/')) {
+        const name = url.split('/api/upload/')[1]?.split('?')[0];
+        const local = name ? await getLocalUpload(name) : null;
+        if (!local) throw new ApiError('NOT_FOUND', `Uploaded audio not found: ${name}`);
+        buf = local.buffer;
+        mimeType = local.mimeType;
+      } else {
+        const fetched = await fetch(url);
+        if (!fetched.ok) throw new ApiError('BAD_REQUEST', `Could not fetch audio from ${url}`);
+        buf = Buffer.from(await fetched.arrayBuffer());
+        const headerType = fetched.headers.get('content-type');
+        if (headerType) mimeType = headerType;
+      }
+
+      audio = new Uint8Array(buf);
+    } else {
+      // Buffer, not atob: base64 audio is binary and atob mangles it.
+      audio = new Uint8Array(Buffer.from(input.audioBase64!, 'base64'));
+      mimeType = input.mimeType ?? 'audio/webm';
+    }
     language = input.language;
   }
 

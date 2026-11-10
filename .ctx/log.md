@@ -89,3 +89,11 @@ onboard live by voice during the demo.
 - `scripts/smoke.ts` has not been run against a live dev server yet.
 - Auth is phone + PIN 0000, unhashed. Payments and ID verification are out of
   scope per the brief and are not mocked at all yet.
+
+## 2026-11-10T12:18:00Z — Media upload implemented & verified (Task 1)
+
+Added `lib/storage.ts`, `POST /api/upload`, and `GET /api/upload/[name]`:
+- Supports audio (webm/mp4/wav, <= 5 MB) and images (jpeg/png/webp, <= 5 MB).
+- Uploads to Supabase Storage if `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are configured, otherwise falls back to `.data/uploads` and serves with immutable caching and path traversal defense.
+- Wired `photoUrl`, `audioUrl`, and work-photos into `POST /api/workers`, `PATCH /api/workers/:id`, `POST /api/workers/:id/photos`, and enabled image/audio URL ingestion directly into `/api/ai/*` endpoints. Verified via `scripts/test-upload.ts`.
+

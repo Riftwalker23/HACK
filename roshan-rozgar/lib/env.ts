@@ -24,6 +24,11 @@ const schema = z.object({
 
   GEMINI_API_KEY: z.string().min(1).optional(),
 
+  // Supabase Storage for media upload (Outcome 1, 3, 5).
+  SUPABASE_URL: z.string().min(1).optional(),
+  SUPABASE_SERVICE_KEY: z.string().min(1).optional(),
+  SUPABASE_BUCKET: z.string().min(1).default('uploads'),
+
   // Search tuning, exposed so it can be defended in the demo.
   SEARCH_DEFAULT_RADIUS_KM: z.coerce.number().positive().default(8),
   SEARCH_MAX_RESULTS: z.coerce.number().int().positive().default(20),
@@ -43,6 +48,7 @@ export const env = parsed.data;
 export const hasAnthropic = () => Boolean(env.ANTHROPIC_API_KEY);
 export const hasOpenAI = () => Boolean(env.OPENAI_API_KEY);
 export const hasGemini = () => Boolean(env.GEMINI_API_KEY);
+export const hasSupabaseStorage = () => Boolean(env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY);
 
 /** True when no real model is reachable — everything will be labelled 'stub'. */
 export const isFullyStubbed = () => !hasAnthropic() && !hasOpenAI() && !hasGemini();

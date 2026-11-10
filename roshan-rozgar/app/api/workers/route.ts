@@ -262,6 +262,7 @@ const createWorkerBody = z
     rateMax: z.coerce.number().int().min(0).max(10_000_000),
     bioUr: z.string().trim().max(2000).optional(),
     bioEn: z.string().trim().max(2000).optional(),
+    photoUrl: z.string().trim().min(1).max(2000).optional(),
     skills: z
       .array(
         z.object({
@@ -349,6 +350,7 @@ export const POST = handle(async (req: Request) => {
         rateMax: input.rateMax,
         bioUr: input.bioUr ?? null,
         bioEn: input.bioEn ?? null,
+        photoUrl: input.photoUrl ?? null,
         onboardedVia: input.onboardedVia ?? 'voice',
         onboardingTranscript: input.onboardingTranscript ?? null,
       })

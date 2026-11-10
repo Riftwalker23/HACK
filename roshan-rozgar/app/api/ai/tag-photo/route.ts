@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { tagPhoto } from '@/lib/ai';
 import { ApiError, body, handle, ok } from '@/lib/http';
+import { getLocalUpload } from '@/lib/storage';
 
 // No `runtime` / `dynamic` segment config: next.config.ts enables
 // `cacheComponents`, and Next 16 fails the build on both. Node is already the
@@ -16,10 +17,15 @@ import { ApiError, body, handle, ok } from '@/lib/http';
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
-const jsonSchema = z.object({
-  imageBase64: z.string().min(1),
-  imageMimeType: z.string().min(1).default('image/jpeg'),
-});
+const jsonSchema = z
+  .object({
+    imageBase64: z.string().optional(),
+    imageMimeType: z.string().default('image/jpeg').optional(),
+    imageUrl: z.string().optional(),
+  })
+  .refine((v) => Boolean(v.imageBase64) || Boolean(v.imageUrl), {
+    message: 'Provide `imageBase64` or `imageUrl`.',
+  });
 
 /** Claude vision accepts these four only; reject anything else up front. */
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -47,9 +53,9 @@ export const POST = handle(async (req: Request) => {
 
   if (contentType.includes('multipart/form-data')) {
     const form = await req.formData();
-    const file = form.get('image');
+    const file = form.get('image') ?? form.get('file');
     if (!(file instanceof Blob)) {
-      throw new ApiError('BAD_REQUEST', 'Expected an `image` file field.');
+      throw new ApiError('BAD_REQUEST', 'Expected an `image` or `file` field.');
     }
     if (file.size > MAX_BYTES) {
       throw new ApiError('BAD_REQUEST', 'Image must be 8MB or smaller.');
@@ -59,8 +65,33 @@ export const POST = handle(async (req: Request) => {
     imageBase64 = Buffer.from(await file.arrayBuffer()).toString('base64');
   } else {
     const input = await body(req, jsonSchema);
-    imageMimeType = assertImageType(input.imageMimeType);
-    imageBase64 = input.imageBase64;
+
+    if (input.imageUrl) {
+      const url = input.imageUrl;
+      let buf: Buffer;
+      let mime = input.imageMimeType ?? 'image/jpeg';
+
+      if (url.includes('/api/upload/')) {
+        const name = url.split('/api/upload/')[1]?.split('?')[0];
+        const local = name ? await getLocalUpload(name) : null;
+        if (!local) throw new ApiError('NOT_FOUND', `Uploaded image not found: ${name}`);
+        buf = local.buffer;
+        mime = local.mimeType;
+      } else {
+        const fetched = await fetch(url);
+        if (!fetched.ok) throw new ApiError('BAD_REQUEST', `Could not fetch image from ${url}`);
+        buf = Buffer.from(await fetched.arrayBuffer());
+        const headerType = fetched.headers.get('content-type');
+        if (headerType) mime = headerType;
+      }
+
+      imageMimeType = assertImageType(mime);
+      imageBase64 = buf.toString('base64');
+    } else {
+      imageMimeType = assertImageType(input.imageMimeType ?? 'image/jpeg');
+      imageBase64 = input.imageBase64!;
+    }
+
     // base64 is ~4/3 of the bytes it encodes.
     if (imageBase64.length * 0.75 > MAX_BYTES) {
       throw new ApiError('BAD_REQUEST', 'Image must be 8MB or smaller.');
