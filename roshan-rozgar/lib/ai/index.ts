@@ -42,7 +42,7 @@ async function loadProviders(): Promise<AiProvider[]> {
 
   const loaded: AiProvider[] = [];
 
-  for (const mod of ['./anthropic', './openai', './elevenlabs', './stub'] as const) {
+  for (const mod of ['./anthropic', './gemini', './openai', './elevenlabs', './stub'] as const) {
     try {
       const m = (await import(mod)) as { provider?: AiProvider; default?: AiProvider };
       const p = m.provider ?? m.default;
@@ -59,16 +59,20 @@ async function loadProviders(): Promise<AiProvider[]> {
 /**
  * Provider preference per capability.
  * ElevenLabs Scribe leads on speech with Whisper as the second opinion;
- * Claude leads on everything textual and visual.
+ * Claude leads on everything textual and visual, with Gemini right behind it.
  */
 const PREFERENCE: Record<Capability, Array<AiProvider['name']>> = {
+  // Dedicated speech models only. Gemini is excluded on purpose: on a no-speech
+  // clip it invents a plausible sentence instead of returning nothing.
   transcribe: ['elevenlabs', 'openai', 'anthropic', 'stub'],
-  extractProfile: ['anthropic', 'openai', 'stub'],
-  tagPhoto: ['anthropic', 'openai', 'stub'],
-  classifyProblem: ['anthropic', 'openai', 'stub'],
-  translate: ['anthropic', 'openai', 'stub'],
-  extractPrice: ['anthropic', 'openai', 'stub'],
-  summariseReviews: ['anthropic', 'openai', 'stub'],
+  // Claude leads text and vision when a key is present; Gemini is the next real
+  // option, and works on its own when it is the only key.
+  extractProfile: ['anthropic', 'gemini', 'openai', 'stub'],
+  tagPhoto: ['anthropic', 'gemini', 'openai', 'stub'],
+  classifyProblem: ['anthropic', 'gemini', 'openai', 'stub'],
+  translate: ['anthropic', 'gemini', 'openai', 'stub'],
+  extractPrice: ['anthropic', 'gemini', 'openai', 'stub'],
+  summariseReviews: ['anthropic', 'gemini', 'openai', 'stub'],
 };
 
 async function dispatch<T>(

@@ -147,16 +147,20 @@ stops working without it.
 | Capability | Provider | Model id | Barrier removed | What breaks without it |
 |---|---|---|---|---|
 | Speech-to-text (Urdu) | ElevenLabs Scribe, then OpenAI Whisper | `scribe_v1`, `whisper-1` | Literacy | **The worker cannot onboard at all.** There is no other input path he can use. |
-| Profile extraction | Anthropic | `claude-opus-5-5` | Literacy + forms | Raw audio is not a searchable profile. No extraction, no discoverability. |
-| Work-photo tagging | Anthropic (vision) | `claude-sonnet-5-5` | No CV, no written proof | Photos become decoration instead of evidence of a specific skill. |
-| Problem classification | Anthropic (text + vision) | `claude-sonnet-5-5` | She doesn't know the trade name | She must diagnose her own fault before she can ask for help. |
-| Urdu ↔ English translation | Anthropic | `claude-sonnet-5-5` | Language asymmetry | The two users literally cannot negotiate. |
-| Spoken-quote → structured price | Anthropic | `claude-sonnet-5-5` | Speed, disputes | No record of what was agreed out loud. |
-| Review synthesis | Anthropic | `claude-sonnet-5-5` | Trust | The next customer is back to asking a neighbour. |
+| Profile extraction | Anthropic, else Gemini | `claude-opus-5-5`, else the `GEMINI_MODEL` chain | Literacy + forms | Raw audio is not a searchable profile. No extraction, no discoverability. |
+| Work-photo tagging | Anthropic (vision), else Gemini | `claude-sonnet-5-5`, else the `GEMINI_MODEL` chain | No CV, no written proof | Photos become decoration instead of evidence of a specific skill. |
+| Problem classification | Anthropic (text + vision), else Gemini | `claude-sonnet-5-5`, else the `GEMINI_MODEL` chain | She doesn't know the trade name | She must diagnose her own fault before she can ask for help. |
+| Urdu ↔ English translation | Anthropic, else Gemini | `claude-sonnet-5-5`, else the `GEMINI_MODEL` chain | Language asymmetry | The two users literally cannot negotiate. |
+| Spoken-quote → structured price | Anthropic, else Gemini | `claude-sonnet-5-5`, else the `GEMINI_MODEL` chain | Speed, disputes | No record of what was agreed out loud. |
+| Review synthesis | Anthropic, else Gemini | `claude-sonnet-5-5`, else the `GEMINI_MODEL` chain | Trust | The next customer is back to asking a neighbour. |
 | Text-to-speech | ElevenLabs (falls back to browser `SpeechSynthesis`) | `eleven_v3` | Literacy | Nothing is read aloud; the worker flow stops being usable. |
 
 Configured via `ANTHROPIC_MODEL`, `ANTHROPIC_MODEL_HEAVY`, `OPENAI_STT_MODEL`, `ELEVENLABS_STT_MODEL`,
-`ELEVENLABS_TTS_MODEL` and `ELEVENLABS_VOICE_ID` — see `.env.example`. A Gemini slot exists as a second fallback but is not implemented.
+`ELEVENLABS_TTS_MODEL` and `ELEVENLABS_VOICE_ID` — see `.env.example`. **Gemini** is a full alternative for every text and vision capability and works with no Anthropic key
+at all. `GEMINI_MODEL` is a comma-separated chain (default
+`gemini-3-flash-preview,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3.8-flash`); a model that is out of
+quota or retired is skipped automatically. Gemini is deliberately **not** used for speech-to-text: given a
+clip with no speech in it, it returned an invented, plausible Urdu customer request.
 
 Run `npm run ai:check` for a live per-endpoint report of provider, latency and pass/fail.
 
@@ -243,10 +247,13 @@ placeholder. Honest breakdown:
 
 1. **No frontend.** Backend only. `../Design.md` holds the full UI specification.
 2. **Translation under the stub is unusable** for a demo (see above). Needs `ANTHROPIC_API_KEY`.
-3. **Only the ElevenLabs paths are verified against a live API.** Scribe speech-to-text and `eleven_v3`
-   text-to-speech were exercised for real (Urdu round trip, 0.95 confidence). The Anthropic and Whisper paths
-   are written and type-checked but have not run against live APIs — no keys were available. Run
-   `npm run ai:check:real` once keys are set; it fails loudly on any stub.
+3. **Live-verified: ElevenLabs and Gemini. Not yet: Anthropic and Whisper.** `npm run ai:check:real`
+   passes 26/27 on Gemini (every price case, classification, extraction, translation, photo tags, review
+   summaries); the one stub is transcription of its no-speech test tone, which is the correct answer. The
+   Anthropic and Whisper paths are written and type-checked but have not run against live APIs.
+3a. **Gemini free-tier quota is small and per model.** Three full test runs exhausted
+   `gemini-3-flash-preview` for the day; calls then fell to slower models (about 5s each instead of 1.5s).
+   Enable billing on the Google AI project before demo day, and avoid running `ai:check` repeatedly.
 4. **PGlite serialises transactions** on a single connection, so a local `Promise.all` race does not
    truly interleave: the state machine rejects the loser before the index can. `npm run race` proves
    the index separately with raw SQL and proves the clean 409 end to end. For judges to watch the

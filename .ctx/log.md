@@ -239,3 +239,17 @@ Both sides had independently built media upload. Reconciled, not duplicated:
 - A full `npm run seed` on Supabase was blocked by the permission checker (it
   TRUNCATEs a remote DB). The smoke run left one test worker/job/review in
   Supabase; reseed deliberately, or leave it.
+
+## 2026-11-10 — Gemini provider (real text + vision AI)
+
+- `lib/ai/gemini.ts`: all six text/vision capabilities over the REST API, JSON
+  constrained by schema and validated with zod. `ai:check:real` 26/27 (the one
+  stub is transcription of a no-speech test tone, which is correct).
+- Prompts and schemas moved to `lib/ai/prompts.ts`, shared by Claude and Gemini.
+  Translation now handles all four language labels (Claude used to translate
+  into Urdu script when Roman Urdu was asked for).
+- Gemini is EXCLUDED from speech-to-text: on a 0.25s tone it returned a full,
+  invented Urdu customer request built from its prompt's example words.
+- Free-tier quota is per model and tiny (3 test runs exhausted
+  gemini-3-flash-preview for the day). GEMINI_MODEL is a comma-separated chain;
+  429/404 models are benched and skipped. Enable billing before demo day.

@@ -22,7 +22,20 @@ const schema = z.object({
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_STT_MODEL: z.string().min(1).default('whisper-1'),
 
+  // Gemini: text/vision AI (extraction, classification, translation, photo tags,
+  // price, review summaries) and a speech-to-text fallback. Get a key at
+  // aistudio.google.com/apikey.
   GEMINI_API_KEY: z.string().min(1).optional(),
+  // Comma-separated, tried in order. Free-tier quota is PER MODEL and small
+  // (one full `ai:check` run exhausted gemini-3.8-flash's daily limit), so a
+  // chain of models multiplies the usable daily capacity. Measured on this
+  // project: gemini-3-flash-preview ~1.5s, gemini-3.6-flash 10-30s.
+  GEMINI_MODEL: z
+    .string()
+    .min(1)
+    .default('gemini-3-flash-preview,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3.8-flash'),
+  // Lower thinking = faster replies; these are extraction tasks, not reasoning.
+  GEMINI_THINKING_LEVEL: z.enum(['minimal', 'low', 'medium', 'high']).default('minimal'),
 
   // ElevenLabs: Scribe speech-to-text (leads the transcribe chain) and
   // text-to-speech for reading prompts aloud to workers who cannot read.
