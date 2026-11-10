@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Stage from '@/components/stage';
 import { useLang } from '@/components/lang';
 import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
-import { api, saveSearch, signInDemo, type Classification } from '@/lib/client-api';
+import { AiChip } from '@/components/customer/ai-chip';
+import { api, getSession, saveSearch, signInDemo, type Classification } from '@/lib/client-api';
 
 type Upload = { url: string; kind: string; bytes: number };
 
@@ -19,6 +20,8 @@ export default function DescribePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<Classification | null>(null);
+  const [where, setWhere] = useState('');
+  useEffect(() => { setWhere(getSession('customer')?.addressLabel ?? ''); }, []);
 
   const labels = lang === 'ur'
     ? { title: 'کیا کام کروانا ہے؟', hint: 'مسئلہ اپنے الفاظ میں لکھیں یا تصویر لگائیں۔', describe: 'مسئلہ بتائیں', photo: 'تصویر شامل کریں', find: 'قریب کاریگر تلاش کریں', analyzing: 'مسئلہ سمجھ رہے ہیں…', understood: 'AI نے یہ سمجھا', remove: 'تصویر ہٹائیں' }
@@ -62,7 +65,7 @@ export default function DescribePage() {
     <Stage>
       <Screen skin="cust" defaultLang="en" id="s-c1" extra="rr-screen">
         <header className="top">
-          <span className="row g4 l bold fx"><Icon name="i-pin" cls="s20 tl" /> G-11, Islamabad</span>
+          <span className="row g4 l bold fx"><Icon name="i-pin" cls="s20 tl" /> {where || '—'}</span>
           <LangSwitch fallback="en" style={{ flex: 'none', width: '188px' }} />
           <ExitBtn />
         </header>
@@ -74,7 +77,7 @@ export default function DescribePage() {
           </label>
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => { setFile(event.target.files?.[0] ?? null); if (event.target.files?.[0]) setSource('photo'); }} />
           {file ? <div className="row sb card" style={{ padding: 12, borderRadius: 14 }}><span className="l fx">{file.name}</span><button type="button" className="see" onClick={() => { setFile(null); if (inputRef.current) inputRef.current.value = ''; }}>{labels.remove}</button></div> : <button type="button" className="btn btn-o" onClick={() => inputRef.current?.click()}><Icon name="i-cam" />{labels.photo}</button>}
-          {result && <div className="card col g4" style={{ padding: 14, borderRadius: 16 }}><b>{labels.understood}</b><span>{result.tradeSlug} · {result.likelyFix}</span><small className="soft">AI: {result.provider} · {Math.round(result.confidence * 100)}%</small></div>}
+          {result && <div className="card col g4" style={{ padding: 14, borderRadius: 16 }}><b>{labels.understood}</b><span>{result.tradeSlug} · {result.likelyFix}</span><span className="row g8"><AiChip provider={result.provider} /><small className="soft">{Math.round(result.confidence * 100)}%</small></span></div>}
           {error && <p role="alert" style={{ color: '#b3162b', margin: 0 }}>{error}</p>}
           <p className="xs soft">Your request is sent to your backend. The demo customer is Ayesha Siddiqui.</p>
         </main>
