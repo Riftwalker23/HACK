@@ -18,6 +18,7 @@ export type ApiResult<T> = ApiOk<T> | ApiErr;
 
 export type ErrorCode =
   | 'BAD_REQUEST'
+  | 'UNAUTHORIZED'
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'INVALID_TRANSITION'
@@ -27,6 +28,7 @@ export type ErrorCode =
 
 const STATUS: Record<ErrorCode, number> = {
   BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
   NOT_FOUND: 404,
   CONFLICT: 409,
   INVALID_TRANSITION: 409,

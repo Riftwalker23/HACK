@@ -89,3 +89,21 @@ onboard live by voice during the demo.
 - `scripts/smoke.ts` has not been run against a live dev server yet.
 - Auth is phone + PIN 0000, unhashed. Payments and ID verification are out of
   scope per the brief and are not mocked at all yet.
+
+## 2026-11-10 — backend gaps closed (smoke 34/34 live)
+
+- Decline/cancel `reason` now persisted: `jobs.status_reason` + `jobs.ended_by`
+  (migration 0001). Surfaced as `ended: { by, reason }` on every job response;
+  accept's auto-decline of competing requests records `by: "system"`.
+- Added mocked `POST /api/auth/login` (phone + PIN + role, no session/token).
+- Fixed `GET /api/customers` leaking `pin` in list/create responses.
+- `scripts/smoke.ts` run live for the first time: 34/34. Its earlier failures
+  were script bugs (wrong response paths), not backend bugs.
+- Wrote real `README.md` and `.env.example`.
+
+### Still not done (hand to the next IDE)
+1. Media upload/storage endpoint (audio + photos); URLs are caller-supplied.
+2. Real AI keys: verify every /api/ai/* off the stub; stub translator is weak.
+   `GEMINI_API_KEY` is read but no Gemini provider exists.
+3. Deploy: hosted Postgres, Vercel, smoke against it, and a real-Postgres
+   concurrent double-accept test (PGlite serialises the race).

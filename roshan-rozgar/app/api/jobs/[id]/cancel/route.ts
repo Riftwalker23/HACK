@@ -51,7 +51,12 @@ export const POST = handle(
 
       await tx
         .update(jobs)
-        .set({ status: 'CANCELLED', updatedAt: new Date() })
+        .set({
+          status: 'CANCELLED',
+          statusReason: input.reason ?? null,
+          endedBy: input.actor,
+          updatedAt: new Date(),
+        })
         .where(and(eq(jobs.id, jobId), eq(jobs.status, current.status)));
 
       let freed = false;
@@ -87,8 +92,7 @@ export const POST = handle(
       {
         job: toJobSummary(result.view),
         cancelledFrom: result.from,
-        // Echoed, not stored: the schema has no cancel-reason column.
-        reason: input.reason ?? null,
+        reason: result.view.statusReason,
         workerAvailability: {
           status: result.view.workerStatus,
           freedByThisCancellation: result.freed,

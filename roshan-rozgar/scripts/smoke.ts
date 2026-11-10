@@ -61,8 +61,10 @@ async function api<T>(
 // Loose shapes — the smoke test should survive additive API changes.
 type Id = { id: string };
 type Health = { driver: string; stubbed: boolean; counts: Record<string, number>; providers: Array<{ name: string; available: boolean }> };
-type WorkerRow = Id & { name: string; status: string; distanceKm?: number; rankingReason?: string; trade?: { slug: string } };
+type WorkerRow = Id & { name: string; status: string; distanceKm?: number; ranking?: { reason?: string }; trade?: { slug: string } };
 type JobRow = Id & { status: string; workerId: string; priceState?: string };
+/** Transition routes answer { job, ... } rather than a bare job. */
+type Moved = { job?: { status: string } };
 
 async function main(): Promise<void> {
   console.log(`Roshan Rozgar — smoke test against ${BASE}\n${'='.repeat(60)}`);
@@ -160,12 +162,12 @@ async function main(): Promise<void> {
   check('search returned at least one available worker', results.length > 0, results.length);
   check('every result is FREE when available=true', results.every((w) => w.status === 'FREE'));
   check('results carry a distance', results.every((w) => typeof w.distanceKm === 'number'));
-  check('results carry a human ranking reason', results.every((w) => Boolean(w.rankingReason)), results[0]);
+  check('results carry a human ranking reason', results.every((w) => Boolean(w.ranking?.reason)), results[0]?.ranking);
   check(
     'results are ordered nearest-best first',
     results.length < 2 || (results[0].distanceKm ?? 0) <= (results[results.length - 1].distanceKm ?? 0) + 20,
   );
-  if (results[0]) console.log(`        top: ${results[0].name} — "${results[0].rankingReason}"`);
+  if (results[0]) console.log(`        top: ${results[0].name} — "${results[0].ranking?.reason}"`);
 
   // The electrician we just created should be findable on his own trade.
   const mine = await api<WorkerRow[]>(
@@ -183,7 +185,7 @@ async function main(): Promise<void> {
   // -------------------------------------------------------------------------
   const customers = await api<Array<Id & { name: string }>>('GET', '/api/customers?limit=1');
   // /api/customers is optional; fall back to the seeded demo customer via health counts.
-  let customerId = customers.body?.data?.[0]?.id;
+  const customerId = customers.body?.data?.[0]?.id;
   if (!customerId) {
     // Create one through the jobs flow instead: most seeds include a demo customer.
     console.log('        (no /api/customers endpoint — using a seeded customer via /api/jobs)');
@@ -196,14 +198,20 @@ async function main(): Promise<void> {
       workerId,
       descriptionRaw: 'Geyser ki wiring kharab hai, current nahi aa raha',
       descriptionSource: 'voice',
-      aiClassification: classified.body.data ?? undefined,
+      // The classifier reports its provider in meta.ai; /api/jobs wants it inline.
+      aiClassification: classified.body.data
+        ? {
+            ...classified.body.data,
+            provider: String((classified.body.meta?.ai as { provider?: string } | undefined)?.provider ?? 'unknown'),
+          }
+        : undefined,
     });
     check('POST /api/jobs created a request', createdJob.status === 200, createdJob.body);
     job = createdJob.body.data;
 
     if (job?.id) {
       const accepted = await api<JobRow>('POST', `/api/jobs/${job.id}/accept`);
-      check('worker can accept the job', accepted.status === 200 && accepted.body.data?.status === 'ACCEPTED', accepted.body);
+      check('worker can accept the job', accepted.status === 200 && (accepted.body.data as unknown as Moved)?.job?.status === 'ACCEPTED', accepted.body);
 
       const afterAccept = await api<WorkerRow>('GET', `/api/workers/${workerId}`);
       check('accepting flipped the worker to BUSY', afterAccept.body.data?.status === 'BUSY', afterAccept.body.data?.status);
@@ -229,13 +237,13 @@ async function main(): Promise<void> {
       });
       check('worker can propose a price', priceW.status === 200, priceW.body);
       const priceC = await api<JobRow>('POST', `/api/jobs/${job.id}/price`, { actor: 'customer', confirm: true });
-      check('customer confirming moves to PRICE_AGREED', priceC.body.data?.status === 'PRICE_AGREED', priceC.body.data);
+      check('customer confirming moves to PRICE_AGREED', (priceC.body.data as unknown as Moved)?.job?.status === 'PRICE_AGREED', priceC.body.data);
 
       const started = await api<JobRow>('POST', `/api/jobs/${job.id}/start`);
-      check('job can start', started.body.data?.status === 'IN_PROGRESS', started.body.data);
+      check('job can start', (started.body.data as unknown as Moved)?.job?.status === 'IN_PROGRESS', started.body.data);
 
       const completed = await api<JobRow>('POST', `/api/jobs/${job.id}/complete`);
-      check('job can complete', completed.body.data?.status === 'COMPLETED', completed.body.data);
+      check('job can complete', (completed.body.data as unknown as Moved)?.job?.status === 'COMPLETED', completed.body.data);
 
       const afterComplete = await api<WorkerRow>('GET', `/api/workers/${workerId}`);
       check('completing freed the worker again', afterComplete.body.data?.status === 'FREE', afterComplete.body.data?.status);

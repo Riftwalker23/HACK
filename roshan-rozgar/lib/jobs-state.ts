@@ -290,6 +290,8 @@ export type JobSummary = {
   customer: { id: string; name: string; phone: string; addressLabel: string };
   trade: { id: string; slug: string; nameEn: string; nameUr: string; color: string; glyph: string };
   description: { raw: string; source: Job['descriptionSource']; photoUrl: string | null };
+  /** Populated only for DECLINED / CANCELLED jobs. */
+  ended: { by: string | null; reason: string | null } | null;
   price: {
     amount: number | null;
     unit: string | null;
@@ -348,6 +350,10 @@ export function toJobSummary(row: JobViewRow): JobSummary {
       source: row.descriptionSource,
       photoUrl: row.photoUrl,
     },
+    ended:
+      row.status === 'DECLINED' || row.status === 'CANCELLED'
+        ? { by: row.endedBy, reason: row.statusReason }
+        : null,
     price: {
       amount: row.agreedPriceAmount,
       unit: row.agreedPriceUnit,

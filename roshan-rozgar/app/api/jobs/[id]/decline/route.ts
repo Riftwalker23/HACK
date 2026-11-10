@@ -53,7 +53,12 @@ export const POST = handle(
 
       await tx
         .update(jobs)
-        .set({ status: 'DECLINED', updatedAt: new Date() })
+        .set({
+          status: 'DECLINED',
+          statusReason: input.data.reason ?? null,
+          endedBy: 'worker',
+          updatedAt: new Date(),
+        })
         .where(and(eq(jobs.id, jobId), eq(jobs.status, 'REQUESTED')));
 
       return loadJobView(tx, jobId);
@@ -62,9 +67,7 @@ export const POST = handle(
     return ok(
       {
         job: toJobSummary(view),
-        // Echoed, not stored: the schema has no decline-reason column and this
-        // route does not own the schema.
-        reason: input.data.reason ?? null,
+        reason: view.statusReason,
         workerAvailability: { status: view.workerStatus, changed: false },
       },
       { serverTime: new Date().toISOString() },

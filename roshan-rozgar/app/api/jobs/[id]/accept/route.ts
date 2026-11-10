@@ -72,7 +72,12 @@ export const POST = handle(
 
         const declined = await tx
           .update(jobs)
-          .set({ status: 'DECLINED', updatedAt: now })
+          .set({
+            status: 'DECLINED',
+            endedBy: 'system',
+            statusReason: 'Worker accepted another request first.',
+            updatedAt: now,
+          })
           .where(
             and(
               eq(jobs.workerId, current.workerId),

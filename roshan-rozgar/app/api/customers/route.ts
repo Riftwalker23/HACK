@@ -16,6 +16,17 @@ import { ApiError, body, handle, ok, query } from '@/lib/http';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const PUBLIC_COLUMNS = {
+  id: customers.id,
+  name: customers.name,
+  phone: customers.phone,
+  lat: customers.lat,
+  lng: customers.lng,
+  addressLabel: customers.addressLabel,
+  rating: customers.rating,
+  createdAt: customers.createdAt,
+};
+
 const listQuery = z.object({
   phone: z.string().min(4).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -25,9 +36,11 @@ export const GET = handle(async (req: Request) => {
   const { phone, limit } = query(req, listQuery);
   const database = await db();
 
+  // Never `select()` the whole row: it carries the PIN.
+  const base = database.select(PUBLIC_COLUMNS).from(customers);
   const rows = phone
-    ? await database.select().from(customers).where(eq(customers.phone, phone)).limit(limit)
-    : await database.select().from(customers).orderBy(desc(customers.createdAt)).limit(limit);
+    ? await base.where(eq(customers.phone, phone)).limit(limit)
+    : await base.orderBy(desc(customers.createdAt)).limit(limit);
 
   return ok(rows, { count: rows.length });
 });
@@ -55,6 +68,6 @@ export const POST = handle(async (req: Request) => {
     throw new ApiError('CONFLICT', 'A customer with that phone number already exists.');
   }
 
-  const [row] = await database.insert(customers).values(input).returning();
+  const [row] = await database.insert(customers).values(input).returning(PUBLIC_COLUMNS);
   return ok(row);
 });

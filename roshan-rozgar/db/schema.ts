@@ -214,6 +214,10 @@ export const jobs = pgTable(
     acceptedAt: timestamp('accepted_at', { withTimezone: true }),
     startedAt: timestamp('started_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
+    /** Why the job ended early. Set by /decline and /cancel only; null otherwise. */
+    statusReason: text('status_reason'),
+    /** Who ended it early: 'worker' | 'customer' | 'system' (auto-decline). */
+    endedBy: text('ended_by'),
     /** Optimistic-concurrency guard for the status transitions. */
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
