@@ -84,6 +84,8 @@ export function useVoiceInput(options: {
     level: rec.level,
     elapsedMs: rec.elapsedMs,
     error: voiceError ?? rec.error,
+    /** True when the microphone itself failed (blocked, missing, busy) rather than the transcription. */
+    micBlocked: !voiceError && rec.state === 'error',
     lastAudio,
     toggle,
     clearError: () => setVoiceError(null),

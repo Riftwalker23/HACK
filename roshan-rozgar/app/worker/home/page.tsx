@@ -98,7 +98,7 @@ export default function WorkerHomePage() {
         </div>
       </article>)}
       {error && <p role="alert" style={{ color: '#b3162b' }}>{error}</p>}
-      <p className="xs soft">Signed into the seeded demo worker account: Aslam Khan. Data is read from your backend.</p>
+      {worker && <p className="xs soft">Signed in as {worker.name}. Data is read from your backend.</p>}
     </main>
   </Screen></Stage>;
 }
