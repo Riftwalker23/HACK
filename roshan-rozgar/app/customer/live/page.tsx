@@ -40,9 +40,9 @@ function railStep(status: Job['status']): number {
 const STEPS = [['i-send', 's1'], ['i-hand', 's2'], ['i-wrench', 's3'], ['i-flag', 's4']] as const;
 
 const D: Record<Lang, Record<string, string>> = {
-  ur: { h: 'آپ کی بکنگ', prog: 'کام کی پیش رفت', s1: 'درخواست', s2: 'طے', s3: 'کام جاری', s4: 'مکمل', REQUESTED: 'کاریگر کے جواب کا انتظار ہے…', ACCEPTED: 'کاریگر نے قبول کر لیا — اب قیمت طے کریں', PRICE_AGREED: 'قیمت طے ہو گئی — کاریگر کام شروع کرے گا', IN_PROGRESS: 'کام جاری ہے', COMPLETED: 'کام مکمل ہو گیا', DECLINED: 'کاریگر نے معذرت کر لی', CANCELLED: 'درخواست منسوخ ہو گئی', call: 'کال کریں', wait: 'کاریگر قیمت بتانے کا منتظر ہے…', price: 'قیمت', agree: 'یہ قیمت ٹھیک ہے', agreed: 'آپ نے منظور کیا', theyAgreed: 'کاریگر نے منظور کیا', newPrice: 'نئی قیمت آئی تو منظوری دوبارہ لینی ہوگی۔', cancel: 'درخواست منسوخ کریں', sure: 'کیا آپ منسوخ کرنا چاہتے ہیں؟', yes: 'ہاں، منسوخ کریں', no: 'رہنے دیں', review: 'رائے دیں', again: 'دوسرا کاریگر ڈھونڈیں', loading: 'لوڈ ہو رہا ہے…', none: 'کوئی بکنگ منتخب نہیں' },
-  rm: { h: 'Aap ki booking', prog: 'Kaam ki pesh-raft', s1: 'Darkhwast', s2: 'Tay', s3: 'Kaam jaari', s4: 'Mukammal', REQUESTED: 'Kaarigar ke jawab ka intezar hai…', ACCEPTED: 'Kaarigar ne qubool kar liya — ab qeemat tay karein', PRICE_AGREED: 'Qeemat tay ho gayi — kaarigar kaam shuru karega', IN_PROGRESS: 'Kaam jaari hai', COMPLETED: 'Kaam mukammal ho gaya', DECLINED: 'Kaarigar ne maazrat kar li', CANCELLED: 'Darkhwast mansookh ho gayi', call: 'Call karein', wait: 'Kaarigar qeemat batane ka muntazir hai…', price: 'Qeemat', agree: 'Yeh qeemat theek hai', agreed: 'Aap ne manzoor kiya', theyAgreed: 'Kaarigar ne manzoor kiya', newPrice: 'Nayi qeemat aayi to manzoori dobara leni hogi.', cancel: 'Darkhwast mansookh karein', sure: 'Kya aap mansookh karna chahte hain?', yes: 'Haan, mansookh karein', no: 'Rehne dein', review: 'Raaye dein', again: 'Doosra kaarigar dhoondein', loading: 'Load ho raha hai…', none: 'Koi booking muntakhib nahi' },
-  en: { h: 'Your booking', prog: 'Job progress', s1: 'Requested', s2: 'Agreed', s3: 'In progress', s4: 'Done', REQUESTED: 'Waiting for the worker to respond…', ACCEPTED: 'The worker accepted — now agree the price', PRICE_AGREED: 'Price agreed — the worker will start', IN_PROGRESS: 'Work is in progress', COMPLETED: 'The job is done', DECLINED: 'The worker declined this request', CANCELLED: 'This request was cancelled', call: 'Call', wait: 'Waiting for the worker to name a price…', price: 'Price', agree: 'This price is right', agreed: 'You agreed', theyAgreed: 'Worker agreed', newPrice: 'If the worker proposes a new price, you will need to agree again.', cancel: 'Cancel request', sure: 'Cancel this request?', yes: 'Yes, cancel', no: 'Keep it', review: 'Leave a review', again: 'Find another worker', loading: 'Loading…', none: 'No booking selected' },
+  ur: { h: 'آپ کی بکنگ', prog: 'کام کی پیش رفت', s1: 'درخواست', s2: 'طے', s3: 'کام جاری', s4: 'مکمل', REQUESTED: 'کاریگر کے جواب کا انتظار ہے…', ACCEPTED: 'کاریگر نے قبول کر لیا — اب قیمت طے کریں', PRICE_AGREED: 'قیمت طے ہو گئی — کاریگر کام شروع کرے گا', IN_PROGRESS: 'کام جاری ہے', COMPLETED: 'کام مکمل ہو گیا', DECLINED: 'کاریگر نے معذرت کر لی', CANCELLED: 'درخواست منسوخ ہو گئی', call: 'کال کریں', wait: 'کاریگر قیمت بتانے کا منتظر ہے…', yourOffer: 'آپ کی پیشکش — کاریگر قبول کرے گا یا اپنی قیمت بتائے گا', price: 'قیمت', agree: 'یہ قیمت ٹھیک ہے', agreed: 'آپ نے منظور کیا', theyAgreed: 'کاریگر نے منظور کیا', newPrice: 'نئی قیمت آئی تو منظوری دوبارہ لینی ہوگی۔', cancel: 'درخواست منسوخ کریں', sure: 'کیا آپ منسوخ کرنا چاہتے ہیں؟', yes: 'ہاں، منسوخ کریں', no: 'رہنے دیں', review: 'رائے دیں', again: 'دوسرا کاریگر ڈھونڈیں', loading: 'لوڈ ہو رہا ہے…', none: 'کوئی بکنگ منتخب نہیں' },
+  rm: { h: 'Aap ki booking', prog: 'Kaam ki pesh-raft', s1: 'Darkhwast', s2: 'Tay', s3: 'Kaam jaari', s4: 'Mukammal', REQUESTED: 'Kaarigar ke jawab ka intezar hai…', ACCEPTED: 'Kaarigar ne qubool kar liya — ab qeemat tay karein', PRICE_AGREED: 'Qeemat tay ho gayi — kaarigar kaam shuru karega', IN_PROGRESS: 'Kaam jaari hai', COMPLETED: 'Kaam mukammal ho gaya', DECLINED: 'Kaarigar ne maazrat kar li', CANCELLED: 'Darkhwast mansookh ho gayi', call: 'Call karein', wait: 'Kaarigar qeemat batane ka muntazir hai…', yourOffer: 'Aap ki pesh-kash — kaarigar qubool karega ya apni qeemat batayega', price: 'Qeemat', agree: 'Yeh qeemat theek hai', agreed: 'Aap ne manzoor kiya', theyAgreed: 'Kaarigar ne manzoor kiya', newPrice: 'Nayi qeemat aayi to manzoori dobara leni hogi.', cancel: 'Darkhwast mansookh karein', sure: 'Kya aap mansookh karna chahte hain?', yes: 'Haan, mansookh karein', no: 'Rehne dein', review: 'Raaye dein', again: 'Doosra kaarigar dhoondein', loading: 'Load ho raha hai…', none: 'Koi booking muntakhib nahi' },
+  en: { h: 'Your booking', prog: 'Job progress', s1: 'Requested', s2: 'Agreed', s3: 'In progress', s4: 'Done', REQUESTED: 'Waiting for the worker to respond…', ACCEPTED: 'The worker accepted — now agree the price', PRICE_AGREED: 'Price agreed — the worker will start', IN_PROGRESS: 'Work is in progress', COMPLETED: 'The job is done', DECLINED: 'The worker declined this request', CANCELLED: 'This request was cancelled', call: 'Call', wait: 'Waiting for the worker to name a price…', yourOffer: 'Your offer — the worker will accept it or counter', price: 'Price', agree: 'This price is right', agreed: 'You agreed', theyAgreed: 'Worker agreed', newPrice: 'If the worker proposes a new price, you will need to agree again.', cancel: 'Cancel request', sure: 'Cancel this request?', yes: 'Yes, cancel', no: 'Keep it', review: 'Leave a review', again: 'Find another worker', loading: 'Loading…', none: 'No booking selected' },
 };
 
 export default function LivePage() {
@@ -56,9 +56,23 @@ export default function LivePage() {
   const [working, setWorking] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const redirected = useRef(false);
+  const offerSent = useRef(false);
 
   const refresh = useCallback(async (id: string) => {
-    const { data } = await api<Job>(`/api/jobs/${id}`);
+    let { data } = await api<Job>(`/api/jobs/${id}`);
+    // The worker accepted: turn the offer made at booking into the proposed price (once).
+    if (data.status === 'ACCEPTED' && data.price.amount === null && !offerSent.current) {
+      let offer = 0;
+      try { offer = Number(localStorage.getItem(`rr_offer_${id}`)) || 0; } catch { /* no stored offer */ }
+      if (offer > 0) {
+        offerSent.current = true;
+        try {
+          await api(`/api/jobs/${id}/price`, { method: 'POST', body: JSON.stringify({ actor: 'customer', amount: offer, unit: 'job' }) });
+          try { localStorage.removeItem(`rr_offer_${id}`); } catch { /* ignore */ }
+          data = (await api<Job>(`/api/jobs/${id}`)).data;
+        } catch { offerSent.current = false; }
+      }
+    }
     setJob(data); setError('');
     if (data.status === 'COMPLETED' && !redirected.current) { redirected.current = true; router.push(`/customer/review?jobId=${id}`); }
     return data;
@@ -140,6 +154,7 @@ export default function LivePage() {
                     <span className={`party ${p.confirmedByWorker ? 'ok' : ''}`}><span className="tk">{p.confirmedByWorker && <Icon name="i-chk" style={{ width: 14, height: 14 }} />}</span>{t.theyAgreed}</span>
                     <span className={`party ${p.confirmedByCustomer ? 'ok' : ''}`}><span className="tk">{p.confirmedByCustomer && <Icon name="i-chk" style={{ width: 14, height: 14 }} />}</span>{t.agreed}</span>
                   </div>
+                  {p.confirmedByCustomer && !p.confirmedByWorker && <span className="l soft">{t.yourOffer}</span>}
                   {!p.confirmedByCustomer && job.status === 'ACCEPTED' && <button type="button" className="btn btn-t" disabled={working} onClick={() => void act('price', { actor: 'customer', confirm: true })}><Icon name="i-chk" cls="s24" />{t.agree}</button>}
                   <span className="xs soft">{t.newPrice}</span>
                 </>
