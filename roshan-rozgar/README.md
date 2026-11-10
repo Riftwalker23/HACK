@@ -22,12 +22,38 @@ Five outcomes, both roles, one flow:
 | 4 | **Booking** — confirmed, and availability stays honest | A state machine with transactional transitions, and a **partial unique index** that makes two concurrent active jobs for one worker impossible *in the database*. |
 | 5 | **Trust** — the next customer gets something better than a neighbour's guess | Stars, tappable tag chips, and a **spoken review**. All of a worker's reviews are synthesised into a trust summary shown *with its source count*. |
 
-### Current state: backend complete, frontend not started
+### Current state: backend complete, frontend mostly built
 
-This repository is the **backend**. There is no UI beyond the default Next.js page. The full
-front-end design specification is in [`../Design.md`](../Design.md), written to be used directly as a
-build prompt. Planning and architecture are in [`../PROJECT.md`](../PROJECT.md); the running
-engineering log is [`../.ctx/log.md`](../.ctx/log.md).
+One Next.js app holds both the API and the two front ends ("two skins over one system", see
+[`../Design.md`](../Design.md)): the **worker** skin is Urdu-first, voice-first, with large targets; the
+**customer** skin is faster and denser. Every screen switches between Urdu, Roman Urdu and English.
+Planning is in [`../PROJECT.md`](../PROJECT.md), the split of the remaining work in
+[`../TEAM-SPLIT.md`](../TEAM-SPLIT.md), and the engineering logs in `../.ctx/`.
+
+**Worker flow** (start at `/start`, pick the worker card):
+
+| Screen | What it does | Status |
+|---|---|---|
+| `/worker/voice` (1/4) | He answers aloud (or types). Speech → ElevenLabs transcript → AI extracts name, trade, years, area, skills, rate. Missing fields get a spoken follow-up. | **Real** |
+| `/worker/trade` (2/4) | The extracted trade is pre-selected: "Are you a plumber?". Tap a tile, or say another trade. | **Real** |
+| `/worker/skills` (3/4) | Years and skills from his own words, with the transcript quoted. "Tell more" adds skills. | **Real** |
+| `/worker/proof` (4/4) | Photos → upload → AI tags (tags become skills). "Hear your profile" reads it aloud. **Publish** creates the worker and attaches the photos. | **Real** |
+| `/worker/home` | Availability on/off, live requests and active jobs (polls every 5 s), accept / price / start / complete. | Real data, generic layout |
+| `/worker/request`, `/worker/done` | Incoming-request and job-complete screens. | **Design mock-ups, no data yet** |
+| `/worker/chat` | Text chat with the customer, translated on both sides. | Real (text only) |
+
+**Customer flow** (`/start`, pick the customer card):
+
+| Screen | What it does |
+|---|---|
+| `/customer/describe` | Describe the problem by **text, photo or voice**; the AI names the trade, urgency and likely fix. |
+| `/customer/results` | Nearby workers ranked by availability → distance → skill → rating, each with its ranking reason. |
+| `/customer/profile` | Work photos with AI tags, trust summary with its source count, recent reviews. |
+| `/customer/booking` → `/customer/live` | Book, then follow the job live: status rail, confirm the worker's price, chat, cancel. |
+| `/customer/review` | Stars, tag chips and an optional spoken review; regenerates the worker's trust summary. |
+
+Every AI result carries a truthful chip: **AI** only when a real model answered, **demo data** when the
+offline stub did.
 
 ---
 
@@ -245,7 +271,19 @@ placeholder. Honest breakdown:
 
 ## Known limitations
 
-1. **No frontend.** Backend only. `../Design.md` holds the full UI specification.
+1. **The frontend is not finished.**
+   - `/worker/request` and `/worker/done` are still design mock-ups with sample values (e.g. Rs 2,500,
+     "39 jobs", "Ayesha"). Jobs can be accepted, priced, started and completed from `/worker/home`.
+   - The **spoken price** step is not built: the price `/worker/home` proposes is the midpoint of the
+     worker's rate band, not a quote he spoke. `/worker/home` also still uses a generic layout instead of
+     the design's FREE / BUSY / OFF buttons.
+   - Chat is **text only**; voice notes in chat are not built yet.
+   - Real microphone recording has not been verified in a browser (the test browser blocks the mic).
+     The typing fallback, the blocked-mic handling and every API step after recording were verified.
+   - The reserved demo account `+923009999999` ("Bilal Ahmed", plumber, G-11) **already exists** in the
+     shared database, created while testing onboarding. A live onboarding on that number signs in to it
+     (409 → login) instead of creating it; delete that worker before the demo for a truly fresh one.
+   - Lint has 0 errors and 4 warnings.
 2. **Translation under the stub is unusable** for a demo (see above). Needs `ANTHROPIC_API_KEY`.
 3. **Live-verified: ElevenLabs and Gemini. Not yet: Anthropic and Whisper.** `npm run ai:check:real`
    passes 26/27 on Gemini (every price case, classification, extraction, translation, photo tags, review
