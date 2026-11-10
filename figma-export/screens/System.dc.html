@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roshan Rozgar design system</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.h2{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin:0}
+.sw{display:flex;flex-direction:column;gap:6px}
+.sw i{display:block;height:64px;border-radius:14px;border:1px solid var(--line)}
+.sw b{font-size:13px}.sw span{font-size:12px;color:var(--soft);font-family:ui-monospace,Menlo,monospace}
+.trow{display:grid;grid-template-columns:72px 1fr 1fr 1fr 110px;align-items:center;gap:16px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.ur-w{font-family:"Noto Naskh Arabic",serif;font-size:20px;direction:rtl;text-align:start}
+.sec{background:var(--surface);border:2px solid var(--line);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:16px}
+</style>
+</helmet>
+<div class="app work en" dir="ltr" lang="en" data-theme="{{theme}}" style="width: 1280px; height: 1560px; padding: 48px; gap: 24px; overflow: hidden;">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-mic"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></g>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-x"><path d="M6 6l12 12M18 6L6 18"></path></g>
+<g id="i-spk"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></g>
+<g id="g-elec"><rect x="6" y="6" width="36" height="36" rx="12"></rect><path d="M27 11L16 26h7.5l-3 11L32 21h-7.5z"></path></g>
+<g id="g-plum"><path d="M13 4s-7 8-7 13a7 7 0 0 0 14 0c0-5-7-13-7-13z"></path><path d="M20 43l13-13"></path><path d="M30 33l-6-6 9-9a6 6 0 0 1 8.5 0l-3 3 1 4 4 1a6 6 0 0 1-1 4l-6 6"></path></g>
+<g id="g-ac"><rect x="5" y="6" width="38" height="14" rx="4"></rect><path d="M11 15h26"></path><path d="M24 25v18M16.5 29.5l15 9M31.5 29.5l-15 9M21 26.5l3 3 3-3M21 41.5l3-3 3 3"></path></g>
+<g id="g-carp"><path d="M5 27L27 7l6 6-21 19z"></path><path d="M9 25l2 2M13 21l2 2M17 17l2 2M21 13l2 2"></path><path d="M30 10l8-4 4 6-7 5"></path><rect x="4" y="35" width="40" height="8" rx="2"></rect></g>
+<g id="g-mech"><path d="M34 5l7 4v8l-7 4-7-4V9z"></path><circle cx="34" cy="13" r="2.5"></circle><path d="M7 41l16-16"></path><path d="M19 21l8 8-4 4-8-8z"></path></g>
+<g id="g-paint"><rect x="6" y="6" width="28" height="12" rx="4"></rect><path d="M34 12h6v12H23v7"></path><rect x="20" y="31" width="6" height="13" rx="2"></rect><path d="M13 18v8a2.5 2.5 0 0 0 5 0v-3"></path></g>
+<g id="g-mason"><path d="M5 25L15 8l9 5-8 17z"></path><path d="M20 21l7-7"></path><rect x="22" y="28" width="21" height="15" rx="1.5"></rect><path d="M22 35.5h21M32.5 28v7.5M27 35.5V43M38 35.5V43"></path></g>
+<g id="s-free"><circle cx="8" cy="8" r="7" fill="currentColor"></circle></g>
+<g id="s-busy"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"></path></g>
+<g id="s-off"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"></circle></g>
+</defs></svg>
+<div class="row sb">
+<div class="col g4"><h1 style="font-size: 44px; font-weight: 800; line-height: 1.1;">Roshan Rozgar — design system</h1><p class="soft" style="font-size: 18px;">Two skins over one system: worker (Kaarigar, warm paper + amber) and customer (Ghar, cool slate + teal).</p></div>
+<div class="lockup col" style="width: 300px;"><div class="truck"></div><div style="padding: 6px 20px; font-family: 'Noto Nastaliq Urdu', serif; font-size: 34px; line-height: 1.9; text-align: center;" lang="ur">روشن روزگار</div><div class="truck"></div></div>
+</div>
+<section class="sec">
+<h2 class="h2">Colour tokens</h2>
+<div style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 16px;">
+<sc-for list="{{colors}}" as="c" hint-placeholder-count="18"><div class="sw"><i style="background: {{c.hex}};"></i><b>{{c.n}}</b><span>{{c.hex}}</span></div></sc-for>
+</div>
+</section>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+<section class="sec">
+<h2 class="h2">Trade quadruple · colour + glyph + Urdu word + audio</h2>
+<div>
+<sc-for list="{{trades}}" as="t" hint-placeholder-count="7">
+<div class="trow tr-{{t.id}}">
+<span class="gl s56"><svg class="gly" viewBox="0 0 48 48"><use href="#g-{{t.id}}"></use></svg></span>
+<b>{{t.en}}</b><span class="ur-w" lang="ur">{{t.ur}}</span><span class="row g8 soft"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-spk"></use></svg><i>{{t.say}}</i></span><span class="num soft" style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">{{t.hex}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+<div class="col g24">
+<section class="sec">
+<h2 class="h2">Type</h2>
+<div class="row g24" style="align-items: flex-start;">
+<div class="col g8 fx"><span class="xs soft">WORKER · 40 / 30 / 20 / 18</span><span style="font-size: 40px; font-weight: 800; line-height: 1.1;">Display</span><span style="font-size: 30px; font-weight: 800;">Title</span><span style="font-size: 20px;">Body 20 — floor 18px</span></div>
+<div class="col g8 fx"><span class="xs soft">CUSTOMER · 30 / 22 / 16 / 14</span><span style="font-size: 30px; font-weight: 800; line-height: 1.15;">Display</span><span style="font-size: 22px; font-weight: 800;">Title</span><span style="font-size: 16px;">Body 16 — floor 14px</span></div>
+</div>
+<div class="row g24" lang="ur" dir="rtl"><span style="font-family: 'Noto Nastaliq Urdu', serif; font-size: 32px; line-height: 2;">نستعلیق — سرخی</span><span style="font-family: 'Noto Naskh Arabic', serif; font-size: 22px; line-height: 1.75;">نسخ — عام متن کے لیے</span></div>
+<p class="soft" style="font-size: 14px;">Plus Jakarta Sans for Latin UI. Nastaliq for display only (its sloped baseline hurts small-size reading); Naskh carries Urdu body. Urdu +2px and +0.25 line-height at every step. Tabular numerals everywhere.</p>
+</section>
+<section class="sec">
+<h2 class="h2">Components</h2>
+<div class="row g16 wrap">
+<div class="orb"><button class="mic" aria-label="Voice button"><svg class="ic lg" viewBox="0 0 24 24"><use href="#i-mic"></use></svg></button></div>
+<div class="col g8 fx">
+<div class="row g8"><button class="btn btn-ok" style="min-height: 56px; flex: 1;"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chk"></use></svg>Yes, I’ll do it</button><button class="btn btn-no" style="min-height: 56px; flex: 1; border-radius: 999px;"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"></use></svg>Not now</button></div>
+<div class="row g8 wrap">
+<span class="pill"><span class="dot"><svg viewBox="0 0 16 16"><use href="#s-free"></use></svg></span>Available</span>
+<span class="pill busy"><span class="dot"><svg viewBox="0 0 16 16"><use href="#s-busy"></use></svg></span>On a job</span>
+<span class="pill off"><span class="dot"><svg viewBox="0 0 16 16"><use href="#s-off"></use></svg></span>Off today</span>
+<span class="ai">AI · demo</span>
+</div>
+</div>
+</div>
+<div class="ribbon"><i></i></div>
+</section>
+</div>
+</div>
+<section class="sec" style="flex: 1;">
+<h2 class="h2">Laws applied on every screen</h2>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; font-size: 15px; line-height: 1.5;">
+<p><b>Squint test.</b> No text-only control: every action has a glyph, colour and shape.</p>
+<p><b>Thumb law.</b> Primary actions in the bottom 35%. 56px worker / 44px customer targets.</p>
+<p><b>Three decisions max</b> per worker screen. No hamburger menu anywhere.</p>
+<p><b>Status ×3.</b> Filled / half / hollow circle + word + motion. Never colour alone.</p>
+<p><b>RTL first.</b> Logical CSS only; direction icons flip, numerals and the Latin wordmark don’t.</p>
+<p><b>Contrast.</b> Amber is a surface; amber text uses #8A4A00. Glyphs on amber are ink, not white.</p>
+<p><b>Trust rendered.</b> Ratings always show job count, recency and review source count.</p>
+<p><b>Honest AI.</b> Every AI surface carries the cobalt AI chip; mocked data is labelled “demo”.</p>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1280,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const colors = [
+      ['ink', '#0B1020'], ['ink-soft', '#3A4256'], ['paper', '#F8F6F1'], ['slate', '#F3F5F8'], ['roshan', '#FF9F1C'], ['roshan-deep', '#D97E06'], ['roshan-text', '#8A4A00'], ['teal', '#0E6E6B'], ['teal-deep', '#0A5250'],
+      ['free', '#1D9A5F'], ['busy', '#C2410C'], ['off', '#6B7280'], ['accept', '#0B6B3D'], ['decline', '#B3162B'], ['star', '#F2B01E'], ['rose', '#E8336D'], ['cobalt', '#2A4BD7'], ['leaf', '#3FA34D']
+    ].map((x) => ({ n: x[0], hex: x[1] }));
+    const trades = [
+      ['elec', 'Electrician', 'بجلی والا', 'bijli waala', '#F2B01E'], ['plum', 'Plumber', 'پلمبر', 'plumber', '#2A6FD7'], ['ac', 'AC technician', 'اے سی والا', 'AC waala', '#2BB3C0'],
+      ['carp', 'Carpenter', 'بڑھئی', 'barhai', '#A4622D'], ['mech', 'Mechanic', 'مستری', 'mistri', '#55606E'], ['paint', 'Painter', 'پینٹر', 'painter', '#7A4FD1'], ['mason', 'Mason', 'راج مستری', 'raj mistri', '#8A8178']
+    ].map((x) => ({ id: x[0], en: x[1], ur: x[2], say: x[3], hex: x[4] }));
+    return { colors, trades, theme: this.props.dark ? 'dark' : 'light' };
+  }
+}
+</script>
+</body>
+</html>

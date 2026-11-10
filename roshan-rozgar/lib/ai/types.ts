@@ -149,7 +149,11 @@ export type TagPhotoInput = {
   allowedTrades: Array<{ slug: string; nameEn: string }>;
 };
 
-export type TranslateInput = { text: string; from: 'ur' | 'en'; to: 'ur' | 'en' };
+export type TranslateInput = {
+  text: string;
+  from: 'ur' | 'en' | 'roman' | 'ur-roman';
+  to: 'ur' | 'en' | 'roman' | 'ur-roman';
+};
 
 export type SummariseReviewsInput = {
   reviews: Array<{ stars: number; tags: string[]; text?: string | null }>;

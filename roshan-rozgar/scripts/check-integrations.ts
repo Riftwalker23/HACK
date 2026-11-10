@@ -16,7 +16,7 @@ import { getDb } from '../db/client';
 import { provider as elevenlabs } from '../lib/ai/elevenlabs';
 import { speak } from '../lib/ai/speech';
 import { env, hasElevenLabs, hasSupabaseStorage } from '../lib/env';
-import { deleteMedia, saveMedia } from '../lib/storage';
+import { deleteMedia, storeMedia } from '../lib/storage';
 
 let passed = 0;
 let failed = 0;
@@ -90,7 +90,7 @@ async function checkStorage() {
   }
   const bytes = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x24, 0, 0, 0, 0x57, 0x41, 0x56, 0x45]); // "RIFF....WAVE"
   try {
-    const stored = await saveMedia(bytes, 'audio/wav');
+    const stored = await storeMedia(bytes, 'audio/wav');
     if (stored.driver !== 'supabase') {
       fail('upload to Supabase', stored.fallbackReason ?? 'fell back to local disk');
       return;

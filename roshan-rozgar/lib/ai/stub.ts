@@ -289,13 +289,25 @@ const SPECIAL_WORDS: Record<string, number> = {
   adha: 0.5, aadha: 0.5, آدھا: 0.5,
 };
 
-/** "saarhay teen hazaar" = 3.5 x 1000. The prefix adds a half to what follows. */
-const HALF_PREFIX = ['saarhay', 'sarhay', 'sarhe', 'sarha', 'saarhe', 'ساڑھے'];
+/**
+ * Fraction prefixes, which modify the number that FOLLOWS them. They cannot
+ * live in SPECIAL_WORDS for that reason: "paune do hazaar" is 1750, not 2000,
+ * and a worker who quoted 1750 but gets booked at 2000 is precisely the dispute
+ * the PriceAgreement card exists to prevent.
+ */
+const FRACTION_PREFIX: Record<string, number> = {
+  saarhay: 0.5, sarhay: 0.5, sarhe: 0.5, sarha: 0.5, saarhe: 0.5, ساڑھے: 0.5,
+  sawa: 0.25, sava: 0.25, sawaa: 0.25, savaa: 0.25, سوا: 0.25,
+  paune: -0.25, pone: -0.25, ponay: -0.25, poune: -0.25, پونے: -0.25, پونا: -0.25,
+};
 
 function tokenise(text: string): string[] {
   return normalise(text)
     // "2,000" must stay one token.
     .replace(/(\d),(?=\d{3}\b)/g, '$1')
+    // "2000-3000" is a spoken range written down. Making the connector an
+    // explicit word is what lets the range detector below treat it as one.
+    .replace(/(\d)\s*[-–—]\s*(?=\d)/g, '$1 se ')
     .split(/[^0-9a-z؀-ۿ]+/)
     .filter(Boolean);
 }
@@ -305,63 +317,116 @@ const isNumericToken = (t: string) =>
   t in UNIT_WORDS ||
   t in SCALE_WORDS ||
   t in SPECIAL_WORDS ||
-  HALF_PREFIX.includes(t);
+  t in FRACTION_PREFIX;
+
+type NumericRun = {
+  value: number;
+  /** The LARGEST scale word in the run, so a bare bound can inherit it. */
+  scale: number | null;
+  /** True when any scale word appeared at all. */
+  hasScale: boolean;
+};
 
 /**
  * Evaluates one run of numeric tokens: "do hazaar paanch sau" -> 2500.
  * Scale words multiply whatever unit preceded them and accumulate.
  */
-function evaluateRun(tokens: string[]): number {
+function evaluateRunDetailed(tokens: string[]): NumericRun {
   let total = 0;
   let unit: number | null = null;
-  let half = false;
+  let fraction = 0;
+  let scale: number | null = null;
 
   for (const t of tokens) {
-    if (HALF_PREFIX.includes(t)) {
-      half = true;
+    const frac = FRACTION_PREFIX[t];
+    if (frac !== undefined) {
+      fraction = frac;
       continue;
     }
     if (t in SPECIAL_WORDS) {
       unit = SPECIAL_WORDS[t]!;
+      fraction = 0;
       continue;
     }
     if (/^\d+$/.test(t)) {
-      unit = Number(t) + (half ? 0.5 : 0);
-      half = false;
+      unit = Number(t) + fraction;
+      fraction = 0;
       continue;
     }
     if (t in UNIT_WORDS) {
-      unit = UNIT_WORDS[t]! + (half ? 0.5 : 0);
-      half = false;
+      unit = UNIT_WORDS[t]! + fraction;
+      fraction = 0;
       continue;
     }
-    if (t in SCALE_WORDS) {
-      total += (unit ?? 1) * SCALE_WORDS[t]!;
+    const s = SCALE_WORDS[t];
+    if (s !== undefined) {
+      // "sawa lakh" names no unit of its own: the fraction applies to one scale.
+      total += (unit ?? (fraction !== 0 ? 1 + fraction : 1)) * s;
       unit = null;
+      fraction = 0;
+      scale = scale === null ? s : Math.max(scale, s);
       continue;
     }
   }
 
-  return Math.round(total + (unit ?? 0));
+  return { value: Math.round(total + (unit ?? 0)), scale, hasScale: scale !== null };
 }
 
-/** Every distinct amount the text names, in order of appearance. */
-function collectAmounts(text: string): number[] {
+function evaluateRun(tokens: string[]): number {
+  return evaluateRunDetailed(tokens).value;
+}
+
+type ParsedAmounts = {
+  /** Every amount the text names, in order of appearance. */
+  amounts: number[];
+  /** True when two different amounts were joined by a range connector. */
+  hasRange: boolean;
+};
+
+function parseAmounts(text: string): ParsedAmounts {
   const tokens = tokenise(text);
-  const out: number[] = [];
+  const runs: NumericRun[] = [];
+  /** rangeBefore[i] — did a range connector sit between run i-1 and run i? */
+  const rangeBefore: boolean[] = [];
+  let gap: string[] = [];
 
   for (let i = 0; i < tokens.length; ) {
     if (!isNumericToken(tokens[i]!)) {
+      gap.push(tokens[i]!);
       i++;
       continue;
     }
     const start = i;
     while (i < tokens.length && isNumericToken(tokens[i]!)) i++;
-    const value = evaluateRun(tokens.slice(start, i));
-    if (value > 0) out.push(value);
+    const run = evaluateRunDetailed(tokens.slice(start, i));
+    if (run.value > 0) {
+      runs.push(run);
+      rangeBefore.push(gap.some((t) => RANGE_TOKENS.includes(t)));
+    }
+    gap = [];
   }
 
-  return out;
+  // "teen se chaar hazaar": the lower bound carries no scale word of its own,
+  // so it inherits the upper bound's. Without this the range reads "3 to 4000"
+  // and the UI shows a 3-rupee quote.
+  for (let i = 0; i + 1 < runs.length; i++) {
+    const lower = runs[i]!;
+    const upper = runs[i + 1]!;
+    if (!rangeBefore[i + 1] || lower.hasScale || upper.scale === null) continue;
+    if (lower.value >= upper.scale) continue;
+    lower.value *= upper.scale;
+  }
+
+  const values = runs.map((r) => r.value);
+  const hasRange =
+    new Set(values).size > 1 && rangeBefore.some((joined, i) => i > 0 && joined);
+
+  return { amounts: values, hasRange };
+}
+
+/** Every amount the text names, in order of appearance. */
+function collectAmounts(text: string): number[] {
+  return parseAmounts(text).amounts;
 }
 
 // ---------------------------------------------------------------------------
@@ -534,21 +599,30 @@ function extractName(transcript: string): string | null {
   return null;
 }
 
+/**
+ * Speech-to-text punctuates inconsistently, and a worker saying his sector out
+ * loud does not say the comma: "جی ۹، اسلام آباد" and "جی ۹ اسلام آباد" are the
+ * same place. Commas become spaces on BOTH sides of the comparison.
+ */
+const flattenCommas = (s: string) => s.replace(/[،,]/g, ' ').replace(/\s+/g, ' ').trim();
+
 /** Candidate spellings for each seeded area, so speech can hit them. */
 function areaCandidates(area: (typeof AREAS)[number]): string[] {
   const head = area.name.split(',')[0]!.trim();
-  const out = [area.name, area.nameUr, head];
+  // The Urdu head matters on its own: he may name the sector and not the city.
+  const headUr = area.nameUr.split('،')[0]!.trim();
+  const out = [area.name, area.nameUr, head, headUr];
 
   const sector = /^([a-z])-(\d{1,2})$/i.exec(head);
   if (sector) {
     const [, letter, num] = sector;
     out.push(`${letter}-${num}`, `${letter} ${num}`, `${letter}${num}`);
   }
-  return out.map(normalise).filter(Boolean);
+  return out.map((c) => flattenCommas(normalise(c))).filter(Boolean);
 }
 
 function extractArea(transcript: string): string | null {
-  const hay = normalise(transcript);
+  const hay = flattenCommas(normalise(transcript));
   let best: { name: string; len: number } | null = null;
 
   for (const area of AREAS) {
@@ -820,13 +894,14 @@ const HEDGE_WORDS = [
 function stubExtractPrice(transcript: string): AiResult<ExtractedPrice> {
   const started = Date.now();
   const hay = normalise(transcript);
-  const tokens = tokenise(transcript);
 
-  const all = collectAmounts(transcript);
+  const { amounts: all, hasRange } = parseAmounts(transcript);
   // Below 50 PKR is a count ("do kamray"), not a price, when a real price exists.
   const priced = all.filter((a) => a >= 50);
   const candidates = priced.length ? priced : all;
 
+  // A range quotes the LOWER bound, matching the instruction given to the real
+  // provider in ./anthropic.ts so both paths record the same number.
   const amount = candidates.length ? Math.min(...candidates) : null;
 
   const unit = amount === null
@@ -834,15 +909,18 @@ function stubExtractPrice(transcript: string): AiResult<ExtractedPrice> {
     : UNIT_HINTS.find((h) => h.words.some((w) => hasKeyword(hay, w)))?.unit ?? 'job';
 
   const includes: string[] = ['labour'];
-  if (MATERIAL_INCLUDED.some((w) => hay.includes(normalise(w)))) includes.push('material');
+  // "material alag" beats "material shamil" if a rambling quote says both:
+  // over-promising what the price covers is the costlier mistake.
+  const materialExcluded = MATERIAL_EXCLUDED.some((w) => hay.includes(normalise(w)));
+  if (!materialExcluded && MATERIAL_INCLUDED.some((w) => hay.includes(normalise(w)))) {
+    includes.push('material');
+  }
   if (UNIT_HINTS[2]!.words.some((w) => hasKeyword(hay, w)) && unit !== 'visit') {
     includes.push('visit');
   }
 
   // A range or a hedge is exactly the case where the UI must ask again rather
   // than write a number into the job record.
-  const hasRange =
-    new Set(candidates).size > 1 && tokens.some((t) => RANGE_TOKENS.includes(t));
   const hedged = HEDGE_WORDS.some((w) => hasKeyword(hay, w));
   const ambiguous = amount === null || hasRange || hedged || new Set(candidates).size > 1;
 

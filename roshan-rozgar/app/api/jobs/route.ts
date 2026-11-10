@@ -40,7 +40,14 @@ const createSchema = z.object({
       likelyFix: z.string().max(500),
       keywords: z.array(z.string().max(80)).max(20),
       confidence: z.number().min(0).max(1),
-      provider: z.string().min(1).max(60),
+      /**
+       * Which model produced this classification. /api/ai/classify-problem
+       * reports it in `meta.ai`, not inside the classification object, so a
+       * client that forwards `data` verbatim legitimately omits it. Default
+       * rather than reject — losing the job request over a provenance label
+       * would be the wrong trade — but never claim a provider we weren't told.
+       */
+      provider: z.string().min(1).max(60).default('unreported'),
     })
     .optional(),
 });

@@ -16,8 +16,8 @@ import { body, handle, ok } from '@/lib/http';
 
 const schema = z.object({
   text: z.string().min(1).max(4_000),
-  from: z.enum(['ur', 'en']),
-  to: z.enum(['ur', 'en']),
+  from: z.enum(['ur', 'en', 'roman', 'ur-roman']),
+  to: z.enum(['ur', 'en', 'roman', 'ur-roman']),
 });
 
 export const POST = handle(async (req: Request) => {

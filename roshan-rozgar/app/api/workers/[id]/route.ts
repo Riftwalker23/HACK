@@ -165,6 +165,7 @@ const patchBody = z
     lat: z.coerce.number().min(-90).max(90).optional(),
     lng: z.coerce.number().min(-180).max(180).optional(),
     area: z.string().trim().min(1).max(120).optional(),
+    photoUrl: z.string().trim().min(1).max(2000).nullable().optional(),
   })
   .refine((v) => Object.values(v).some((field) => field !== undefined), {
     message: 'Provide at least one field to update.',
@@ -223,6 +224,7 @@ export const PATCH = handle(async (req: Request, ctx: Ctx) => {
       ...(input.lat !== undefined ? { lat: input.lat } : {}),
       ...(input.lng !== undefined ? { lng: input.lng } : {}),
       ...(input.area !== undefined ? { area: input.area } : {}),
+      ...(input.photoUrl !== undefined ? { photoUrl: input.photoUrl } : {}),
     })
     .where(eq(workers.id, id))
     .returning();

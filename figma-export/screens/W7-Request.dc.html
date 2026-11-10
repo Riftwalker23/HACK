@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ur">
+<head>
+<meta charset="utf-8">
+<title>Incoming job request</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.tk{--bg:#0B1020;--text:#F6F2E9;--soft:#C3CAD9;--surface:#1A2133;--line:#323C55}
+.stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;border-radius:20px;background:var(--surface);border:2px solid var(--line);text-align:center}
+</style>
+</helmet>
+<div class="app work tk {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-spk"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></g>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-x"><path d="M6 6l12 12M18 6L6 18"></path></g>
+<g id="i-pin"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></g>
+<g id="i-star"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></g>
+<g id="i-house"><path d="M3 11l9-7 9 7M5 9.5V20h14V9.5M10 20v-6h4v6"></path></g>
+<g id="i-coin"><circle cx="12" cy="12" r="9"></circle><path d="M9 8h6M9 11h6M13 8c2 0 2 6-4 6l5 4"></path></g>
+</defs></svg>
+<header class="top">
+<button class="iconbtn" aria-label="{{t.read}}" style="border-color: var(--roshan); color: var(--roshan);"><svg class="ic" viewBox="0 0 24 24"><use href="#i-spk"></use></svg></button>
+<div class="seg3" role="group" aria-label="Language">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<main class="col g12 fx px">
+<div class="row g16">
+<div style="position: relative; width: 96px; height: 96px; flex: none;" role="timer" aria-label="{{t.timer}}">
+<svg viewBox="0 0 96 96" width="96" height="96" aria-hidden="true" style="transform: rotate(-90deg);"><circle cx="48" cy="48" r="42" fill="none" stroke="#323C55" stroke-width="8"></circle><circle cx="48" cy="48" r="42" fill="none" stroke="#FF9F1C" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="79"></circle></svg>
+<span class="t num" style="position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Plus Jakarta Sans', sans-serif;">42</span>
+</div>
+<div class="col g4 fx">
+<span class="row g8 l bold" style="color: var(--roshan);"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-spk"></use></svg>{{t.speaking}}</span>
+<h1 class="t nq">{{t.title}}</h1>
+</div>
+</div>
+<div class="ph" style="height: 130px; background: #1A2133; border-color: #323C55; position: relative; overflow: hidden;" role="img" aria-label="{{t.photo}}">
+<svg viewBox="0 0 358 210" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style="position: absolute; inset: 0;">
+<rect width="358" height="210" fill="#2A3142"></rect><rect x="0" y="150" width="358" height="60" fill="#3A3226"></rect>
+<rect x="128" y="40" width="100" height="70" rx="8" fill="#E9ECF0"></rect><circle cx="160" cy="75" r="9" fill="#2A3142"></circle><circle cx="196" cy="75" r="9" fill="#2A3142"></circle>
+<path d="M150 40c-6-14 10-16 4-30M206 40c6-12-8-16-2-30" stroke="#8D95A3" stroke-width="3" fill="none"></path>
+<path d="M170 110q8 22-6 40" stroke="#D7263D" stroke-width="5" fill="none"></path>
+</svg>
+<span class="xs" style="position: absolute; inset-block-end: 8px; inset-inline-start: 8px; background: rgba(0,0,0,.6); color: #fff; padding: 4px 8px; border-radius: 6px;">{{t.sample}}</span>
+</div>
+<div class="map" style="height: 120px; flex: none; border-radius: 18px; --mapbg: #1F2A3A; --road: #3A4660; border: 2px solid #323C55;" role="img" aria-label="{{t.mapA}}">
+<svg class="bg" viewBox="0 0 358 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40h358M0 95h358M80 0v120M250 0v120" stroke="var(--road)" stroke-width="10"></path><path d="M80 95L80 40L250 40" stroke="#FF9F1C" stroke-width="5" stroke-dasharray="10 7" fill="none"></path></svg>
+<span class="me amber" style="left: 22%; top: 79%;"></span>
+<span class="pin" style="left: 70%; top: 33%; width: 48px; height: 48px; background: #0E6E6B; color: #fff;"><svg class="ic" viewBox="0 0 24 24"><use href="#i-house"></use></svg></span>
+</div>
+<div class="row g8">
+<div class="stat"><svg class="ic" viewBox="0 0 24 24" style="color: var(--roshan);"><use href="#i-pin"></use></svg><span class="b bold num" dir="ltr">1.8 km</span></div>
+<div class="stat"><svg class="ic" viewBox="0 0 24 24" style="color: #F2B01E; fill: #F2B01E;"><use href="#i-star"></use></svg><span class="b bold num" dir="ltr">4.8</span></div>
+<div class="stat"><svg class="ic" viewBox="0 0 24 24" style="color: var(--roshan);"><use href="#i-coin"></use></svg><span class="b bold num" dir="ltr">~2,500</span></div>
+</div>
+</main>
+<div class="dock">
+<a class="btn btn-ok big" href="W8-Chat.dc.html"><svg class="ic lg" viewBox="0 0 24 24"><use href="#i-chk"></use></svg><span class="nq">{{t.yes}}</span></a>
+<button class="btn btn-no big" style="border-radius: 999px;"><svg class="ic lg" viewBox="0 0 24 24"><use href="#i-x"></use></svg><span class="nq">{{t.no}}</span></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"ur"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'ur';
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { mapA: 'نقشہ: گاہک کا گھر آپ سے 1.8 کلومیٹر دور', title: 'نیا کام: کچن میں شارٹ سرکٹ', speaking: 'سنا رہے ہیں…', timer: '42 سیکنڈ باقی', photo: 'گاہک کی تصویر: کچن کا ساکٹ', sample: 'نمونہ تصویر', yes: 'ہاں، کرلوں گا', no: 'ابھی نہیں', read: 'یہ صفحہ سنیں' },
+      rm: { mapA: 'Naqsha: gahak ka ghar aap se 1.8 km door', title: 'Naya kaam: kitchen mein short circuit', speaking: 'Suna rahe hain…', timer: '42 second baqi', photo: 'Gahak ki tasveer: kitchen ka socket', sample: 'Namoona tasveer', yes: 'Haan, kar loonga', no: 'Abhi nahi', read: 'Yeh safha sunein' },
+      en: { mapA: 'Map: the customer’s home is 1.8 km from you', title: 'New job: kitchen short circuit', speaking: 'Reading it to you…', timer: '42 seconds left', photo: 'Customer photo: kitchen socket', sample: 'Sample photo', yes: 'Yes, I’ll do it', no: 'Not now', read: 'Read this page aloud' }
+    };
+    return { t: D[L], dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.sb2{width:56px;height:56px;border:0;background:transparent;padding:0;display:grid;place-items:center}
+.sb2 svg{width:44px;height:44px;stroke:#8A6200;stroke-width:1.4}
+.sb2.on svg{fill:var(--star)}
+.sb2:not(.on) svg{fill:transparent;stroke:var(--soft)}
+.tg{min-height:44px;padding:0 14px;border-radius:999px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.tg.on{border-color:var(--teal);background:var(--ttint)}
+.tx{padding:12px;border-radius:14px;background:color-mix(in srgb,var(--cobalt) 7%,var(--surface));border:1px dashed var(--cobalt);font-size:14px;line-height:1.55}
+</style>
+</helmet>
+<div class="app cust {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-star"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></g>
+<g id="i-mic"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></g>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-clock"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></g>
+<g id="i-spark"><path d="M4 20l4-4M14 4l6 6-9 9-6-6z"></path></g>
+<g id="i-coin"><circle cx="12" cy="12" r="9"></circle><path d="M9 8h6M9 11h6M13 8c2 0 2 6-4 6l5 4"></path></g>
+<g id="i-smile"><circle cx="12" cy="12" r="9"></circle><path d="M8 14a5 5 0 0 0 8 0M9 9h.01M15 9h.01"></path></g>
+</defs></svg>
+<header class="top">
+<span class="fx"></span>
+<div class="seg3" role="group" aria-label="Language" style="flex: none; width: 200px;">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<main class="col g16 fx px">
+<div class="col g4"><h1 class="t">{{t.h}}</h1><span class="l soft">{{t.sub}}</span></div>
+<div class="row" role="radiogroup" aria-label="{{t.rate}}" style="justify-content: center; gap: 4px;">
+<sc-for list="{{stars}}" as="s" hint-placeholder-count="5"><button class="sb2 {{s.c}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.label}}" onClick="{{s.pick}}"><svg viewBox="0 0 24 24"><use href="#i-star"></use></svg></button></sc-for>
+</div>
+<div class="card col g12" style="padding: 14px; border-radius: 18px; align-items: center;">
+<div class="orb" style="width: 80px; height: 80px;"><button class="mic" aria-label="{{t.speak}}" style="width: 80px; height: 80px;"><svg class="ic" viewBox="0 0 24 24" style="width: 34px; height: 34px;"><use href="#i-mic"></use></svg></button></div>
+<span class="b bold">{{t.speak}}</span>
+<div class="col g8" style="width: 100%;" aria-live="polite">
+<div class="row g8"><span class="ai">AI · demo</span><span class="xs soft">{{t.aiNote}}</span></div>
+<p class="tx">{{t.said}}</p>
+</div>
+</div>
+<div class="col g8"><span class="l bold soft">{{t.tagsH}}</span>
+<div class="row g8 wrap">
+<sc-for list="{{tags}}" as="g" hint-placeholder-count="4"><button class="tg {{g.c}}" aria-pressed="{{g.on}}" onClick="{{g.tg}}"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-{{g.ic}}"></use></svg>{{g.label}}</button></sc-for>
+</div></div>
+</main>
+<div class="dock"><a class="btn btn-t" href="C7-States.dc.html" style="min-height: 56px;"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-chk"></use></svg>{{t.send}}</a></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"en"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'en';
+    const r = (this.state && this.state.r) || 5;
+    const on = (this.state && this.state.on) || { clock: true, spark: true, coin: true };
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { h: 'رفیق کا کام کیسا رہا؟', sub: 'گیزر والو · آج', rate: 'ستارے', star: 'ستارے', speak: 'اپنی رائے بولیں', aiNote: 'آپ کی بات کا خلاصہ', said: '“وقت پر آئے، والو بدلا اور فرش بھی صاف کر کے گئے۔ قیمت وہی لی جو طے تھی۔”', tagsH: 'ٹیگ لگائیں', tags: { clock: 'وقت پر', spark: 'صاف کام', coin: 'مناسب قیمت', smile: 'اچھا رویہ' }, send: 'رائے بھیجیں' },
+      rm: { h: 'Rafiq ka kaam kaisa raha?', sub: 'Geyser valve · aaj', rate: 'Sitaare', star: 'sitaare', speak: 'Apni raaye bolein', aiNote: 'aap ki baat ka khulasa', said: '“Waqt par aaye, valve badla aur farsh bhi saaf kar ke gaye. Qeemat wohi li jo tay thi.”', tagsH: 'Tag lagayein', tags: { clock: 'Waqt par', spark: 'Saaf kaam', coin: 'Munasib qeemat', smile: 'Achha rawaiya' }, send: 'Raaye bhejein' },
+      en: { h: 'How was Rafiq’s work?', sub: 'Geyser valve · today', rate: 'Rating', star: 'stars', speak: 'Speak your review', aiNote: 'transcribed + translated from Urdu', said: '“Came on time, replaced the valve and even cleaned the floor. Charged exactly the agreed price.”', tagsH: 'Add tags', tags: { clock: 'On time', spark: 'Clean work', coin: 'Fair price', smile: 'Polite' }, send: 'Submit review' }
+    };
+    const t = D[L];
+    const stars = [1, 2, 3, 4, 5].map((n) => ({ on: n <= r, c: n <= r ? 'on' : '', label: n + ' ' + t.star, pick: () => this.setState({ r: n }) }));
+    const tags = ['clock', 'spark', 'coin', 'smile'].map((ic) => ({ ic, label: t.tags[ic], on: !!on[ic], c: on[ic] ? 'on' : '', tg: () => this.setState({ on: Object.assign({}, on, { [ic]: !on[ic] }) }) }));
+    return { t, stars, tags, dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

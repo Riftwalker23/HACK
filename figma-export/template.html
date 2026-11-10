@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roshan Rozgar — Figma export</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/*SHARED_CSS*/
+</style>
+<style>
+body{margin:0;background:#E9E6DF;font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#0B1020}
+.bar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 24px;background:#0B1020;color:#fff}
+.bar b{margin-inline-end:12px}
+.bar a{color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;border:1px solid #3A4256;font-weight:700;font-size:14px}
+.bar a.on{background:#FF9F1C;border-color:#FF9F1C;color:#0B1020}
+.bar span{opacity:.75;font-size:13px;margin-inline-start:auto}
+.sheet{padding:48px}
+.row-title{font:800 40px/1.1 "Plus Jakarta Sans",sans-serif;margin:0 0 28px}
+.row{display:flex;flex-wrap:wrap;gap:64px 48px;margin-bottom:96px;align-items:flex-start}
+.frame{display:flex;flex-direction:column;gap:10px}
+.frame>h3{margin:0;font:700 15px/1.2 "Plus Jakarta Sans",sans-serif;color:#3A4256}
+.frame>.box{border-radius:28px;overflow:hidden;box-shadow:0 20px 40px -20px rgba(11,16,32,.35)}
+.frame.wide>.box{border-radius:16px}
+</style>
+</head>
+<body>
+<nav class="bar" id="bar"></nav>
+<main class="sheet" id="sheet"></main>
+<script id="screens" type="application/json">/*SCREENS_JSON*/</script>
+<script>
+(function () {
+  'use strict';
+  // Minimal static renderer for the canvas .dc.html format: resolves {{holes}}, <sc-for>, <sc-if>,
+  // runs each screen's renderVals() with chosen props, scopes its styles and SVG ids, and drops event handlers.
+  var SVG = 'http://www.w3.org/2000/svg';
+  var params = new URLSearchParams(location.search);
+  var LANG = params.get('lang') || 'en';
+  var DARK = params.get('dark') === '1';
+  var screens = JSON.parse(document.getElementById('screens').textContent);
+
+  var bar = document.getElementById('bar');
+  bar.innerHTML = '<b>Roshan Rozgar · Figma export</b>';
+  [['en', 'English'], ['ur', 'اردو'], ['rm', 'Roman Urdu']].forEach(function (x) {
+    [false, true].forEach(function (d) {
+      var a = document.createElement('a');
+      a.href = '?lang=' + x[0] + (d ? '&dark=1' : '');
+      a.textContent = x[1] + (d ? ' · dark' : '');
+      if (x[0] === LANG && d === DARK) a.className = 'on';
+      bar.appendChild(a);
+    });
+  });
+  var hint = document.createElement('span');
+  hint.textContent = 'Capture this page with the html.to.design extension → editable Figma layers';
+  bar.appendChild(hint);
+
+  function DCLogic(props) { this.props = props; this.state = null; }
+  DCLogic.prototype.setState = function () {};
+  DCLogic.prototype.forceUpdate = function () {};
+
+  function lookup(ctx, path) {
+    path = path.trim();
+    if (path === 'true') return true;
+    if (path === 'false') return false;
+    if (/^-?\d+(\.\d+)?$/.test(path)) return Number(path);
+    if (/^'.*'$/.test(path)) return path.slice(1, -1);
+    return path.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, ctx);
+  }
+  function interp(str, ctx) {
+    var whole = str.match(/^\s*\{\{([^}]+)\}\}\s*$/);
+    if (whole) return lookup(ctx, whole[1]);
+    return str.replace(/\{\{([^}]+)\}\}/g, function (_, p) { var v = lookup(ctx, p); return v == null ? '' : String(v); });
+  }
+
+  function renderNodes(nodes, ctx, out, scope) {
+    for (var i = 0; i < nodes.length; i++) renderNode(nodes[i], ctx, out, scope);
+  }
+  function renderNode(node, ctx, out, scope) {
+    if (node.nodeType === 3) { out.appendChild(document.createTextNode(String(interp(node.nodeValue, ctx) ?? ''))); return; }
+    if (node.nodeType !== 1) return;
+    var tag = node.localName;
+    if (tag === 'helmet' || tag === 'script') return;
+    if (tag === 'sc-for') {
+      var list = lookup(ctx, (node.getAttribute('list') || '').replace(/^\s*\{\{|\}\}\s*$/g, '')) || [];
+      var as = node.getAttribute('as') || 'item';
+      list.forEach(function (item, idx) {
+        var c = Object.assign({}, ctx); c[as] = item; c.$index = idx;
+        renderNodes(node.childNodes, c, out, scope);
+      });
+      return;
+    }
+    if (tag === 'sc-if') {
+      var v = interp(node.getAttribute('value') || '', ctx);
+      if (v) renderNodes(node.childNodes, ctx, out, scope);
+      return;
+    }
+    var el = node.namespaceURI === SVG ? document.createElementNS(SVG, tag) : document.createElement(tag);
+    for (var a = 0; a < node.attributes.length; a++) {
+      var at = node.attributes[a], name = at.name;
+      if (/^on/i.test(name) || /^hint-/.test(name)) continue;
+      var val = interp(at.value, ctx);
+      if (typeof val === 'function' || val == null) continue;
+      val = String(val);
+      // keep SVG sprite ids unique per screen (different screens reuse the same id for different shapes)
+      if (name === 'id') val = scope + '-' + val;
+      if ((name === 'href' || name === 'xlink:href') && val.charAt(0) === '#') val = '#' + scope + '-' + val.slice(1);
+      if (name === 'aria-labelledby') val = scope + '-' + val;
+      val = val.replace(/url\(#([^)]+)\)/g, function (_, id) { return 'url(#' + scope + '-' + id + ')'; });
+      el.setAttribute(name, val);
+    }
+    renderNodes(node.childNodes, ctx, el, scope);
+    out.appendChild(el);
+  }
+
+  function scopeCss(text, scope) {
+    var sheet = new CSSStyleSheet();
+    try { sheet.replaceSync(text); } catch (e) { return ''; }
+    var css = '';
+    Array.prototype.forEach.call(sheet.cssRules, function (r) {
+      if (r.selectorText) {
+        var sel = r.selectorText.split(',').map(function (s) { s = s.trim(); return s === 'body' ? null : '.' + scope + ' ' + s; }).filter(Boolean);
+        if (sel.length) css += sel.join(',') + '{' + r.style.cssText + '}\n';
+      } else {
+        css += r.cssText + '\n';
+      }
+    });
+    return css;
+  }
+
+  var groups = [
+    { title: 'Worker skin · Kaarigar', files: ['Splash.dc.html', 'Main.dc.html', 'W2-Voice.dc.html', 'W3-Trade.dc.html', 'W4-Skills.dc.html', 'W5-Proof.dc.html', 'W6-Home.dc.html', 'W7-Request.dc.html', 'W8-Chat.dc.html', 'W9-Done.dc.html'] },
+    { title: 'Customer skin · Ghar', files: ['C1-Describe.dc.html', 'C2-Results.dc.html', 'C3-Profile.dc.html', 'C4-Booking.dc.html', 'C5-Live.dc.html', 'C6-Review.dc.html', 'C7-States.dc.html'] },
+    { title: 'Design system', files: ['System.dc.html'] }
+  ];
+  var byFile = {}; screens.forEach(function (s) { byFile[s.file] = s; });
+  var sheetEl = document.getElementById('sheet');
+  var n = 0;
+
+  groups.forEach(function (g) {
+    var h = document.createElement('h2'); h.className = 'row-title'; h.textContent = g.title + ' — ' + ({ en: 'English', ur: 'Urdu', rm: 'Roman Urdu' })[LANG] + (DARK ? ' · dark' : '');
+    var row = document.createElement('section'); row.className = 'row';
+    sheetEl.appendChild(h); sheetEl.appendChild(row);
+    g.files.forEach(function (f) {
+      var s = byFile[f]; if (!s) return;
+      var scope = 's' + (n++);
+      var doc = new DOMParser().parseFromString(s.src, 'text/html');
+      var script = doc.querySelector('script[data-dc-script]');
+      var props = {};
+      try {
+        var decl = JSON.parse(script.getAttribute('data-props') || '{}');
+        Object.keys(decl).forEach(function (k) { if (k.charAt(0) !== '$' && 'default' in decl[k]) props[k] = decl[k].default; });
+      } catch (e) {}
+      props.lang = LANG; props.dark = DARK;
+      var Component = new Function('DCLogic', script.textContent + '\n;return Component;')(DCLogic);
+      var inst = new Component(props); inst.props = props; inst.state = inst.state || null;
+      var ctx = inst.renderVals();
+
+      var styleText = Array.prototype.map.call(doc.querySelectorAll('helmet style'), function (st) { return st.textContent; }).join('\n');
+      var style = document.createElement('style'); style.textContent = scopeCss(styleText, scope);
+      document.head.appendChild(style);
+
+      var frame = document.createElement('div'); frame.className = 'frame' + (f === 'System.dc.html' ? ' wide' : '');
+      var label = document.createElement('h3'); label.textContent = (doc.querySelector('title') || {}).textContent || f;
+      var box = document.createElement('div'); box.className = 'box ' + scope;
+      var xdc = doc.querySelector('x-dc');
+      renderNodes(xdc.childNodes, ctx, box, scope);
+      frame.appendChild(label); frame.appendChild(box); row.appendChild(frame);
+    });
+  });
+})();
+</script>
+</body>
+</html>

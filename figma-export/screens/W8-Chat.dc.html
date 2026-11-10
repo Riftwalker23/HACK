@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ur">
+<head>
+<meta charset="utf-8">
+<title>Job chat</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.me-b{align-self:flex-end;background:var(--tint);border-color:var(--roshan)}
+.see{min-height:44px;padding:0 12px;border-radius:12px;border:2px solid var(--line);background:transparent;font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.tr{padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--cobalt) 8%,var(--surface));border:1px dashed var(--cobalt);font-size:16px;line-height:1.5}
+.pa td{padding:6px 0;font-size:17px}
+</style>
+</helmet>
+<div class="app work {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-spk"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></g>
+<g id="i-mic"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></g>
+<g id="i-kb"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"></path></g>
+<g id="i-play"><path d="M7 4l13 8-13 8z"></path></g>
+<g id="i-eye"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></g>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-coin"><circle cx="12" cy="12" r="9"></circle><path d="M9 8h6M9 11h6M13 8c2 0 2 6-4 6l5 4"></path></g>
+</defs></svg>
+<header class="top">
+<button class="iconbtn" aria-label="{{t.read}}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-spk"></use></svg></button>
+<div class="seg3" role="group" aria-label="Language">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<div class="row g12 px" style="padding-bottom: 10px; border-bottom: 2px solid var(--line);">
+<span class="gl s40" style="--c: var(--teal); --g: var(--on-teal); font-weight: 800; font-size: 16px; font-family: 'Plus Jakarta Sans', sans-serif;">A</span>
+<h1 class="b bold fx">{{t.who}}</h1>
+<span class="ai">AI · {{t.translate}}</span>
+</div>
+<main class="col g12 fx px" style="padding-top: 12px;" aria-live="polite">
+<div class="col g8" style="max-width: 320px;">
+<div class="vn"><button class="play" aria-label="{{t.play}}"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-play"></use></svg></button><div class="wv" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="l num">0:12</span></div>
+<button class="see" aria-expanded="{{open}}" onClick="{{toggle}}"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-eye"></use></svg>{{t.see}}</button>
+<sc-if value="{{open}}" hint-placeholder-val="{{true}}"><p class="tr">{{t.cMsg}}</p></sc-if>
+</div>
+<div class="vn me-b" style="max-width: 300px;"><button class="play" aria-label="{{t.play}}"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-play"></use></svg></button><div class="wv" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="l num">0:08</span></div>
+<section class="card col g8" style="padding: 14px 16px; border-color: var(--roshan);" aria-label="{{t.price}}">
+<div class="row sb"><span class="row g8 b bold"><svg class="ic" viewBox="0 0 24 24" style="color: var(--roshan-text);"><use href="#i-coin"></use></svg>{{t.price}}</span><span class="ai">AI</span></div>
+<p class="l soft">{{t.quote}}</p>
+<table class="pa" style="border-collapse: collapse; width: 100%;"><tbody>
+<tr><td class="soft">{{t.amt}}</td><td class="bold num" dir="ltr" style="text-align: end; font-size: 24px;">Rs 2,500</td></tr>
+<tr><td class="soft">{{t.inc}}</td><td class="bold" style="text-align: end;">{{t.incV}}</td></tr>
+<tr><td class="soft">{{t.exc}}</td><td class="bold" style="text-align: end;">{{t.excV}}</td></tr>
+</tbody></table>
+</section>
+</main>
+<div class="dock">
+<a class="btn btn-ok" href="W9-Done.dc.html" style="min-height: 72px;"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chk"></use></svg>{{t.agree}}</a>
+<div class="row" style="justify-content: center; gap: 24px;">
+<button class="iconbtn" aria-label="{{t.type}}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-kb"></use></svg></button>
+<div class="orb"><button class="mic" aria-label="{{t.speak}}"><svg class="ic lg" viewBox="0 0 24 24"><use href="#i-mic"></use></svg></button></div>
+<span style="width: 56px;"></span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"ur"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'ur';
+    const open = !(this.state && this.state.closed);
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { who: 'عائشہ · جی-11 اسلام آباد', translate: 'ترجمہ', play: 'وائس نوٹ سنیں', see: 'دیکھیں', cMsg: '“ساکٹ سے دھواں نکلا تھا، اب بجلی بند ہے۔ کب تک آ سکتے ہیں؟”', price: 'طے شدہ قیمت', quote: 'آپ نے کہا: “ڈھائی ہزار، سامان الگ”', amt: 'رقم', inc: 'شامل', incV: 'مزدوری', exc: 'شامل نہیں', excV: 'نیا ساکٹ', agree: 'یہی قیمت ٹھیک ہے', type: 'لکھ کر بھیجیں', speak: 'بول کر بھیجیں', read: 'یہ صفحہ سنیں' },
+      rm: { who: 'Ayesha · G-11 Islamabad', translate: 'tarjuma', play: 'Voice note sunein', see: 'Dekhein', cMsg: '“Socket se dhuan nikla tha, ab bijli band hai. Kab tak aa sakte hain?”', price: 'Tay shuda qeemat', quote: 'Aap ne kaha: “Dhai hazaar, saamaan alag”', amt: 'Raqam', inc: 'Shaamil', incV: 'Mazdoori', exc: 'Shaamil nahi', excV: 'Naya socket', agree: 'Yahi qeemat theek hai', type: 'Likh kar bhejein', speak: 'Bol kar bhejein', read: 'Yeh safha sunein' },
+      en: { who: 'Ayesha · G-11 Islamabad', translate: 'translated', play: 'Play voice note', see: 'See it', cMsg: '“Smoke came out of the socket, now the power is off. How soon can you come?”', price: 'Agreed price', quote: 'You said: “Two and a half thousand, parts extra”', amt: 'Amount', inc: 'Included', incV: 'Labour', exc: 'Not included', excV: 'New socket', agree: 'This price is right', type: 'Type a message', speak: 'Speak a message', read: 'Read this page aloud' }
+    };
+    return { t: D[L], open, toggle: () => this.setState({ closed: open }), dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

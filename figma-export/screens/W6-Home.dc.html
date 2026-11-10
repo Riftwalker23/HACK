@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ur">
+<head>
+<meta charset="utf-8">
+<title>Worker home</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.st{--sc:#0B6B3D;display:flex;align-items:center;gap:16px;min-height:88px;padding:0 20px;border-radius:28px;border:3px solid var(--sc);background:var(--surface);color:var(--text);font-weight:800;text-align:start;transition:all .16s cubic-bezier(.2,.8,.2,1)}
+.st.busy{--sc:#C2410C}.st.off{--sc:#4B5563}
+.st .sh{position:relative;width:48px;height:48px;flex:none;color:var(--sc)}
+.st .sh svg{position:relative;z-index:1;width:48px;height:48px}
+.st.sel{min-height:210px;flex-direction:column;justify-content:center;background:var(--sc);color:#fff;gap:12px}
+.st.sel .sh{width:88px;height:88px;color:#fff}.st.sel .sh svg{width:88px;height:88px}
+.st.sel.free .sh::after{content:"";position:absolute;inset:0;border-radius:50%;background:#fff;animation:ripple 3s ease-out infinite}
+.job{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:20px;background:var(--surface);border:2px solid var(--line)}
+</style>
+</helmet>
+<div class="app work {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-spk"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></g>
+<g id="i-coin"><circle cx="12" cy="12" r="9"></circle><path d="M9 8h6M9 11h6M13 8c2 0 2 6-4 6l5 4"></path></g>
+<g id="i-pin"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></g>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-clock"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></g>
+<g id="g-elec"><rect x="6" y="6" width="36" height="36" rx="12"></rect><path d="M27 11L16 26h7.5l-3 11L32 21h-7.5z"></path></g>
+<g id="s-free"><circle cx="24" cy="24" r="20" fill="currentColor" stroke="none"></circle></g>
+<g id="s-busy"><circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="4"></circle><path d="M24 6a18 18 0 0 1 0 36z" fill="currentColor" stroke="none"></path></g>
+<g id="s-off"><circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="4"></circle></g>
+</defs></svg>
+<header class="top">
+<button class="iconbtn" aria-label="{{t.read}}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-spk"></use></svg></button>
+<div class="seg3" role="group" aria-label="Language">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<main class="col g12 fx px" style="padding-bottom: 16px;">
+<h1 class="sr">{{t.h}}</h1>
+<div class="row g12"><span class="gl s56" style="--c: var(--roshan); --g: #0B1020; font: 800 22px/1 'Plus Jakarta Sans', sans-serif; border: 3px solid #0B1020;">MA</span><p class="t nq fx">{{t.hi}}</p></div>
+<div class="col g12" role="group" aria-label="{{t.h}}" aria-live="polite">
+<sc-for list="{{opts}}" as="o" hint-placeholder-count="3">
+<button class="st {{o.id}} {{o.selc}}" aria-pressed="{{o.on}}" onClick="{{o.pick}}">
+<span class="sh"><svg viewBox="0 0 48 48"><use href="#s-{{o.id}}"></use></svg></span>
+<span class="{{o.size}} nq">{{o.word}}</span>
+</button>
+</sc-for>
+</div>
+<div class="card row g12" style="padding: 14px 16px; margin-top: auto;">
+<span class="gl s56" style="--c: var(--roshan); --g: #0B1020;"><svg class="ic" viewBox="0 0 24 24"><use href="#i-coin"></use></svg></span>
+<div class="col fx"><span class="l soft">{{t.earn}}</span><span class="t num" dir="ltr" style="text-align: start;">Rs 3,500</span></div>
+<span class="row g4 l bold" style="color: var(--accept);"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-chk"></use></svg>2</span>
+</div>
+<a class="job" href="W7-Request.dc.html" style="text-decoration: none;">
+<span class="gl s56 tr-elec"><svg class="gly" viewBox="0 0 48 48"><use href="#g-elec"></use></svg></span>
+<div class="col fx"><span class="b bold">{{t.j1}}</span><span class="row g8 l soft"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-pin"></use></svg><span class="num">1.8 km</span><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-clock"></use></svg><span class="num">4:30</span></span></div>
+</a>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"ur"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'ur';
+    const st = (this.state && this.state.st) || 'free';
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { hi: 'سلام، اسلم بھائی!', h: 'آج میرا حال', earn: 'آج کی کمائی', j1: 'کچن میں شارٹ سرکٹ', free: 'فارغ ہوں', busy: 'کام پر ہوں', off: 'آج چھٹی', read: 'یہ صفحہ سنیں' },
+      rm: { hi: 'Salaam, Aslam bhai!', h: 'Aaj mera haal', earn: 'Aaj ki kamai', j1: 'Kitchen mein short circuit', free: 'Faarigh hoon', busy: 'Kaam par hoon', off: 'Aaj chutti', read: 'Yeh safha sunein' },
+      en: { hi: 'Salaam, Aslam bhai!', h: 'My status today', earn: 'Earned today', j1: 'Kitchen short circuit', free: 'Available', busy: 'On a job', off: 'Off today', read: 'Read this page aloud' }
+    };
+    const t = D[L];
+    const opts = ['free', 'busy', 'off'].map((id) => ({ id, word: t[id], on: id === st, selc: id === st ? 'sel' : '', size: id === st ? 'd' : 't', pick: () => this.setState({ st: id }) }));
+    return { t, opts, dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

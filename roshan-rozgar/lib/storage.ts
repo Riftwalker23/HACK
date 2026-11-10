@@ -2,50 +2,73 @@
  * Media storage for voice notes and work photos.
  *
  *   SUPABASE_URL + SUPABASE_SERVICE_KEY set -> Supabase Storage (public bucket)
- *   otherwise                               -> local disk, .data/uploads
+ *   otherwise                               -> local disk, .data/uploads, served
+ *                                              by GET /api/upload/[name]
  *
- * A Supabase failure (venue wifi, bad key) falls back to local disk instead of
- * failing the upload: a worker's voice note must never be lost because the cloud
- * was unreachable. Every result reports which `driver` stored it, so the
- * fallback is visible rather than silent.
+ * Behaviour worth knowing:
+ *  - The bucket is created on first use, so there is no dashboard step.
+ *  - Both Supabase key styles work: legacy `service_role` JWTs (sent as
+ *    `apikey` + `Authorization`) and newer `sb_secret_…` keys (`apikey` only).
+ *  - SUPABASE_URL is reduced to its origin, so pasting the ".../rest/v1/"
+ *    address from the dashboard still works.
+ *  - A Supabase failure (venue wifi, bad key) falls back to local disk instead
+ *    of losing a worker's voice note. `driver` / `fallbackReason` on the result
+ *    make that visible rather than silent.
  *
  * Plain `fetch` against the Storage REST API; no supabase-js dependency.
  */
 
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { env, hasSupabaseStorage } from '@/lib/env';
 
-export const UPLOAD_DIR = process.env.UPLOAD_DIR ?? join('.data', 'uploads');
+export const MAX_MEDIA_BYTES = 5 * 1024 * 1024; // 5 MB, audio and images alike
 
 export type MediaKind = 'audio' | 'image';
 
-/** Allowlist, by base mime type (codec parameters are stripped first). */
-const ALLOWED: Record<string, { kind: MediaKind; ext: string }> = {
-  'audio/webm': { kind: 'audio', ext: 'webm' },
-  'audio/ogg': { kind: 'audio', ext: 'ogg' },
-  'audio/mpeg': { kind: 'audio', ext: 'mp3' },
-  'audio/mp3': { kind: 'audio', ext: 'mp3' },
-  'audio/mp4': { kind: 'audio', ext: 'mp4' },
-  'audio/m4a': { kind: 'audio', ext: 'm4a' },
-  'audio/x-m4a': { kind: 'audio', ext: 'm4a' },
-  'audio/wav': { kind: 'audio', ext: 'wav' },
-  'audio/x-wav': { kind: 'audio', ext: 'wav' },
-  'audio/wave': { kind: 'audio', ext: 'wav' },
-  'audio/flac': { kind: 'audio', ext: 'flac' },
-  'image/jpeg': { kind: 'image', ext: 'jpg' },
-  'image/png': { kind: 'image', ext: 'png' },
-  'image/webp': { kind: 'image', ext: 'webp' },
+export type StoredMedia = {
+  url: string;
+  kind: MediaKind;
+  bytes: number;
+  /** Object name; the last path segment of `url`. */
+  name: string;
+  mimeType: string;
+  /** Which backend actually holds the file. */
+  driver: 'supabase' | 'local';
+  /** Set when Supabase was configured but failed and the file went to disk. */
+  fallbackReason?: string;
 };
 
-export const MAX_BYTES: Record<MediaKind, number> = {
-  audio: 8 * 1024 * 1024,
-  image: 5 * 1024 * 1024,
+export const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
 };
 
+export const ALLOWED_AUDIO_TYPES: Record<string, string> = {
+  'audio/webm': 'webm',
+  'audio/ogg': 'ogg',
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/mp4': 'mp4',
+  'audio/x-m4a': 'm4a',
+  'audio/m4a': 'm4a',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/wave': 'wav',
+  'audio/flac': 'flac',
+};
+
+export const LOCAL_UPLOADS_DIR = process.env.UPLOAD_DIR ?? join(process.cwd(), '.data', 'uploads');
+
+/** Extension -> the one mime type we serve it as. */
 const EXT_TO_MIME: Record<string, string> = {
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
   webm: 'audio/webm',
   ogg: 'audio/ogg',
   mp3: 'audio/mpeg',
@@ -53,34 +76,18 @@ const EXT_TO_MIME: Record<string, string> = {
   m4a: 'audio/mp4',
   wav: 'audio/wav',
   flac: 'audio/flac',
-  jpg: 'image/jpeg',
-  png: 'image/png',
-  webp: 'image/webp',
 };
-
-/** Object names we generate; also the only shape the local GET route will serve. */
-export const OBJECT_NAME = /^(audio|image)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]{2,5}$/;
 
 export function mimeForName(name: string): string {
-  return EXT_TO_MIME[name.split('.').pop() ?? ''] ?? 'application/octet-stream';
+  return EXT_TO_MIME[name.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
 }
 
-export function classify(mimeType: string): { kind: MediaKind; ext: string; base: string } | null {
+export function detectMediaKind(mimeType: string): { kind: MediaKind; extension: string } | null {
   const base = mimeType.split(';')[0]!.trim().toLowerCase();
-  const hit = ALLOWED[base];
-  return hit ? { ...hit, base } : null;
+  if (base in ALLOWED_IMAGE_TYPES) return { kind: 'image', extension: ALLOWED_IMAGE_TYPES[base]! };
+  if (base in ALLOWED_AUDIO_TYPES) return { kind: 'audio', extension: ALLOWED_AUDIO_TYPES[base]! };
+  return null;
 }
-
-export type StoredMedia = {
-  url: string;
-  name: string;
-  kind: MediaKind;
-  mimeType: string;
-  bytes: number;
-  driver: 'supabase' | 'local';
-  /** Set when Supabase was configured but failed, so the UI/logs can say why. */
-  fallbackReason?: string;
-};
 
 // ---------------------------------------------------------------------------
 // Supabase Storage
@@ -97,9 +104,9 @@ function supabaseHeaders(extra: Record<string, string> = {}): Record<string, str
   };
 }
 
-// Only the origin is used: pasting the REST address (".../rest/v1/") from the
-// dashboard instead of the bare project URL is an easy mistake, and any path on
-// SUPABASE_URL would otherwise send Storage calls to the wrong service.
+// Only the origin is used: pasting the REST address (".../rest/v1/") instead of
+// the bare project URL is an easy mistake, and any path on SUPABASE_URL would
+// otherwise send Storage calls to the wrong service.
 const storageBase = () => `${new URL(env.SUPABASE_URL!).origin}/storage/v1`;
 
 const globalForStorage = globalThis as unknown as { __roshanBucketReady?: boolean };
@@ -115,8 +122,10 @@ async function ensureBucket(): Promise<void> {
       id: env.SUPABASE_BUCKET,
       name: env.SUPABASE_BUCKET,
       public: true,
-      file_size_limit: MAX_BYTES.audio,
-      allowed_mime_types: [...new Set(Object.keys(ALLOWED))],
+      file_size_limit: MAX_MEDIA_BYTES,
+      allowed_mime_types: [
+        ...new Set([...Object.keys(ALLOWED_IMAGE_TYPES), ...Object.keys(ALLOWED_AUDIO_TYPES)]),
+      ],
     }),
     signal: AbortSignal.timeout(15_000),
   });
@@ -125,13 +134,13 @@ async function ensureBucket(): Promise<void> {
     const detail = await res.text().catch(() => '');
     // Supabase answers 400 or 409 with "already exists" for a second create.
     if (!/already exists|Duplicate/i.test(detail)) {
-      throw new Error(`supabase bucket ${res.status}: ${detail.slice(0, 200)}`);
+      throw new Error(`Supabase bucket setup failed (${res.status}): ${detail.slice(0, 200)}`);
     }
   }
   globalForStorage.__roshanBucketReady = true;
 }
 
-async function putSupabase(name: string, bytes: Uint8Array, mimeType: string): Promise<string> {
+async function uploadToSupabase(name: string, bytes: Uint8Array, mimeType: string): Promise<string> {
   await ensureBucket();
 
   const res = await fetch(`${storageBase()}/object/${env.SUPABASE_BUCKET}/${name}`, {
@@ -143,12 +152,12 @@ async function putSupabase(name: string, bytes: Uint8Array, mimeType: string): P
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`supabase upload ${res.status}: ${detail.slice(0, 200)}`);
+    throw new Error(`Supabase Storage upload failed (${res.status}): ${detail.slice(0, 200)}`);
   }
   return `${storageBase()}/object/public/${env.SUPABASE_BUCKET}/${name}`;
 }
 
-/** Best-effort delete, used by the integration check to clean up after itself. */
+/** Best-effort delete of a Supabase object (used by the integration check). */
 export async function deleteMedia(media: Pick<StoredMedia, 'name' | 'driver'>): Promise<void> {
   if (media.driver === 'supabase' && hasSupabaseStorage()) {
     await fetch(`${storageBase()}/object/${env.SUPABASE_BUCKET}/${media.name}`, {
@@ -163,16 +172,26 @@ export async function deleteMedia(media: Pick<StoredMedia, 'name' | 'driver'>): 
 // Local disk
 // ---------------------------------------------------------------------------
 
-async function putLocal(name: string, bytes: Uint8Array): Promise<string> {
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  await writeFile(join(UPLOAD_DIR, name), bytes);
+async function saveToLocalDisk(name: string, bytes: Uint8Array): Promise<string> {
+  await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
+  await writeFile(join(LOCAL_UPLOADS_DIR, name), bytes);
   return `/api/upload/${name}`;
 }
 
-export async function readLocal(name: string): Promise<Buffer | null> {
-  if (!OBJECT_NAME.test(name)) return null;
+/**
+ * Retrieve a locally stored upload. Returns null if missing or if the name
+ * could point outside the uploads directory.
+ */
+export async function getLocalUpload(
+  name: string,
+): Promise<{ buffer: Buffer; mimeType: string; size: number } | null> {
+  if (!/^[a-zA-Z0-9_.-]+$/.test(name) || name.includes('..')) return null;
+
+  const filePath = join(LOCAL_UPLOADS_DIR, name);
   try {
-    return await readFile(join(UPLOAD_DIR, name));
+    const info = await stat(filePath);
+    if (!info.isFile()) return null;
+    return { buffer: await readFile(filePath), mimeType: mimeForName(name), size: info.size };
   } catch {
     return null;
   }
@@ -182,27 +201,50 @@ export async function readLocal(name: string): Promise<Buffer | null> {
 // Entry point
 // ---------------------------------------------------------------------------
 
-export async function saveMedia(bytes: Uint8Array, mimeType: string): Promise<StoredMedia> {
-  const meta = classify(mimeType);
-  if (!meta) throw new RangeError(`Unsupported media type: ${mimeType}`);
-  if (bytes.byteLength === 0) throw new RangeError('The file was empty.');
-  if (bytes.byteLength > MAX_BYTES[meta.kind]) {
-    throw new RangeError(`${meta.kind} files must be ${MAX_BYTES[meta.kind] / 1024 / 1024}MB or smaller.`);
+/**
+ * Validates and stores one file. Throws a plain Error (with a user-readable
+ * message) for an oversize, empty or unsupported file.
+ *
+ * `preferredName` is accepted for API compatibility but not used in the stored
+ * name: the object name is always `<kind>-<uuid>.<ext-from-mime>`, so a
+ * client-supplied filename can never choose an extension or a path.
+ */
+export async function storeMedia(
+  buffer: Buffer | Uint8Array,
+  mimeType: string,
+  preferredName?: string,
+): Promise<StoredMedia> {
+  void preferredName;
+
+  const bytes = buffer.byteLength;
+  if (bytes === 0) throw new Error('The uploaded file is empty.');
+  if (bytes > MAX_MEDIA_BYTES) {
+    throw new Error(
+      `File size (${(bytes / (1024 * 1024)).toFixed(2)}MB) exceeds maximum limit of ${MAX_MEDIA_BYTES / 1024 / 1024}MB.`,
+    );
   }
 
-  const name = `${meta.kind}-${randomUUID()}.${meta.ext}`;
-  const base = { name, kind: meta.kind, mimeType: meta.base, bytes: bytes.byteLength };
+  const detected = detectMediaKind(mimeType);
+  if (!detected) {
+    throw new Error(
+      `Unsupported media type "${mimeType}". Allowed audio: webm, ogg, mp3, mp4/m4a, wav, flac. Allowed images: jpeg, png, webp.`,
+    );
+  }
+
+  const { kind, extension } = detected;
+  const name = `${kind}-${randomUUID()}.${extension}`;
+  const base = { name, kind, bytes, mimeType: mimeForName(name) };
+  const data = new Uint8Array(buffer);
 
   if (hasSupabaseStorage()) {
     try {
-      const url = await putSupabase(name, bytes, meta.base);
-      return { ...base, url, driver: 'supabase' };
+      return { ...base, url: await uploadToSupabase(name, data, base.mimeType), driver: 'supabase' };
     } catch (err) {
       const reason = (err as Error).message;
       console.warn(`[storage] supabase failed, saving locally: ${reason}`);
-      return { ...base, url: await putLocal(name, bytes), driver: 'local', fallbackReason: reason };
+      return { ...base, url: await saveToLocalDisk(name, data), driver: 'local', fallbackReason: reason };
     }
   }
 
-  return { ...base, url: await putLocal(name, bytes), driver: 'local' };
+  return { ...base, url: await saveToLocalDisk(name, data), driver: 'local' };
 }
