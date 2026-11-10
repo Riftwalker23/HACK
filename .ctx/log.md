@@ -97,3 +97,82 @@ Added `lib/storage.ts`, `POST /api/upload`, and `GET /api/upload/[name]`:
 - Uploads to Supabase Storage if `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are configured, otherwise falls back to `.data/uploads` and serves with immutable caching and path traversal defense.
 - Wired `photoUrl`, `audioUrl`, and work-photos into `POST /api/workers`, `PATCH /api/workers/:id`, `POST /api/workers/:id/photos`, and enabled image/audio URL ingestion directly into `/api/ai/*` endpoints. Verified via `scripts/test-upload.ts`.
 
+
+## 2026-11-10T13:10:00Z — tasks 1-3: upload, README, race proof; first live smoke run
+
+Pushed as f113668, rebased onto a teammate's UI/Figma commit (f2298a4). No
+file overlap between the two.
+
+### First end-to-end smoke run — 35/35, and it found two real bugs
+`scripts/smoke.ts` had never been run against a live server. It caught:
+1. **POST /api/jobs rejected EVERY AI classification.** The route's zod
+   required `provider` INSIDE `aiClassification`, but `/api/ai/classify-problem`
+   reports the provider in `meta`, so any client forwarding `data` verbatim got
+   a 400. Fixed both ways: the route defaults it to `'unreported'` rather than
+   losing a job request over a provenance label, and classify-problem now
+   carries `provider` in the payload so it reaches the jsonb column.
+2. Three smoke assertions read the wrong paths. `ranking.reason` is NESTED
+   under `ranking`; the transition endpoints return `{ job, ... }` while
+   `POST /api/jobs` returns the job view directly. The test was wrong, not the
+   API — but note that response-shape asymmetry when building the frontend.
+
+Lesson: per-slice agent verification passed while the seams between slices
+were broken. The end-to-end test is what found it. Run `npm run smoke` after
+every change, not just at the end.
+
+### Task 1 — media upload (built by an earlier session, audited here)
+`POST /api/upload`, `GET /api/upload/[name]`, `POST /api/workers/[id]/photos`,
+`lib/storage.ts`. Supabase Storage when configured, else `.data/uploads`.
+Audit: path traversal is correctly blocked, and the served Content-Type is
+derived from the EXTENSION against an allow-list rather than from client input.
+Hardened the serve path with `X-Content-Type-Options: nosniff` and a sandbox
+CSP, since it returns user-uploaded bytes from our own origin.
+**Still open:** MIME type is taken from the client with no magic-byte sniff.
+
+### Task 3 — deploy readiness
+Real README written (setup, stack, all 27 routes, every AI service with model
+id and its "what breaks without it" line, seed inventory, demo accounts, an
+explicit table of what the stub does REALLY vs FAKES, ten limitations, and the
+AI-coding-assistant disclosure the rules require). `.env.example` extended with
+the Supabase variables.
+
+**`.gitignore` trap:** create-next-app ships `.env*`, which silently untracked
+`.env.example` — a required deliverable that would simply have been missing
+from the repo. Added a `!.env.example` negation. Check `git ls-tree` for
+deliverables rather than trusting `git status`.
+
+### Task 3 — race proof: `npm run race`, 22 assertions
+Proves `one_active_job_per_worker` three independent ways: present in
+`pg_indexes` covering exactly the three active statuses; raw SQL double-accept
+refused with SQLSTATE 23505 naming the constraint, with NO application code in
+the path; and the real accept route returning a clean `409 WORKER_BUSY` with
+`details.enforcedBy: 'database'`. Self-cleaning fixtures, verified idempotent
+over four runs.
+
+On PGlite the `Promise.allSettled` race is won by the STATE MACHINE
+(`409 INVALID_TRANSITION`), not the index, because drizzle's PGlite driver
+delegates to `client.transaction()` which serialises behind a mutex. The script
+accepts either guard and names which fired. Only one thing is unprovable
+locally: that two accept transactions genuinely overlap in time.
+
+### !! OPEN RISK — not fixed, needs real Postgres to confirm
+On a genuinely concurrent Postgres the accept route may **DEADLOCK**:
+tx1 locks job A `FOR UPDATE` and inserts the index tuple; tx2 blocks on it;
+tx1's auto-DECLINE sweep then needs job B, which tx2 holds. Cycle → Postgres
+raises 40P01 → `lib/http.ts` maps it to INTERNAL → **HTTP 500, not the 409 the
+pitch promises.** Consistency still holds either way, but the demo would show
+the wrong thing on the one database where the claim is meant to shine.
+Proposed fix (NOT applied): drop `.for('update')` on the initial re-read in
+`app/api/jobs/[id]/accept/route.ts` — the conditional
+`UPDATE ... AND status='REQUESTED'` already guards the write, and without the
+row lock held across the index insert the cycle disappears, so tx2 resolves
+into a genuine 23505 → `rethrowAsWorkerBusy` → clean 409.
+**Verify against a real DATABASE_URL before changing it.** This is
+lock-ordering analysis, not a reproduced failure.
+
+### Still blocked on credentials (cannot be resolved locally)
+- **Real AI verification** needs `ANTHROPIC_API_KEY` + `OPENAI_API_KEY`. The
+  Anthropic and Whisper paths are written and typechecked but have NEVER been
+  executed. Run `npm run ai:check:real` once keys exist — it fails on any stub.
+- **migrate/seed/verify/smoke against real Postgres** needs `DATABASE_URL`.
+  Everything so far was proven on PGlite only.

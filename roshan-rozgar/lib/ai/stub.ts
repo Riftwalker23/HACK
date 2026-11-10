@@ -599,21 +599,30 @@ function extractName(transcript: string): string | null {
   return null;
 }
 
+/**
+ * Speech-to-text punctuates inconsistently, and a worker saying his sector out
+ * loud does not say the comma: "جی ۹، اسلام آباد" and "جی ۹ اسلام آباد" are the
+ * same place. Commas become spaces on BOTH sides of the comparison.
+ */
+const flattenCommas = (s: string) => s.replace(/[،,]/g, ' ').replace(/\s+/g, ' ').trim();
+
 /** Candidate spellings for each seeded area, so speech can hit them. */
 function areaCandidates(area: (typeof AREAS)[number]): string[] {
   const head = area.name.split(',')[0]!.trim();
-  const out = [area.name, area.nameUr, head];
+  // The Urdu head matters on its own: he may name the sector and not the city.
+  const headUr = area.nameUr.split('،')[0]!.trim();
+  const out = [area.name, area.nameUr, head, headUr];
 
   const sector = /^([a-z])-(\d{1,2})$/i.exec(head);
   if (sector) {
     const [, letter, num] = sector;
     out.push(`${letter}-${num}`, `${letter} ${num}`, `${letter}${num}`);
   }
-  return out.map(normalise).filter(Boolean);
+  return out.map((c) => flattenCommas(normalise(c))).filter(Boolean);
 }
 
 function extractArea(transcript: string): string | null {
-  const hay = normalise(transcript);
+  const hay = flattenCommas(normalise(transcript));
   let best: { name: string; len: number } | null = null;
 
   for (const area of AREAS) {
