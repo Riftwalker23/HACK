@@ -1,26 +1,606 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* The design system, copied verbatim from the Figma/canvas export.
+   Do not edit app/shared.css by hand — it is the source of truth for the look. */
+@import "./shared.css";
+
+/* Per-board CSS, lifted from each screen's <helmet><style> and scoped. */
+@import "./screens.css";
+
+/* Brand tokens exposed to Tailwind so new chrome can reuse them.
+   Same values as .app in shared.css; that file still owns the look. */
+@theme {
+  --color-ink: #0b1020;
+  --color-ink-soft: #3a4256;
+  --color-paper: #f8f6f1;
+  --color-slate: #f3f5f8;
+  --color-roshan: #ff9f1c;
+  --color-roshan-deep: #d97e06;
+  --color-roshan-text: #8a4a00;
+  --color-teal: #0e6e6b;
+  --color-teal-deep: #0a5250;
+  --color-free: #1d9a5f;
+  --color-busy: #c2410c;
+  --color-off: #6b7280;
+  --color-accept: #0b6b3d;
+  --color-decline: #b3162b;
+  --color-star: #f2b01e;
+  --color-rose: #e8336d;
+  --color-cobalt: #2a4bd7;
+  --color-leaf: #3fa34d;
+  --color-stage: #e9e6df;
+  --color-stage-dark: #0a0e18;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ===================== Stage: the phone frame on a desktop backdrop =====================
+   Everything here is outside .app — it never changes the designed screens. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+html {
+  background: #e9e6df;
+}
+html[data-stage="dark"] {
+  background: #0a0e18;
+}
+body {
+  min-height: 100dvh;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+  color: #0b1020;
+  -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.stage {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px 28px;
+}
+.stage-wide {
+  justify-content: flex-start;
+}
+
+/* chrome above the phone: theme + screen navigation. Not part of the design. */
+.chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1280px;
+}
+.chrome-sp {
+  margin-inline-start: auto;
+}
+.chrome a,
+.chrome button {
+  font: 700 13px/1 var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+  color: #0b1020;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1.5px solid rgba(11, 16, 32, 0.12);
+  border-radius: 10px;
+  padding: 9px 12px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chrome a:hover,
+.chrome button:hover {
+  border-color: rgba(11, 16, 32, 0.34);
+}
+.chrome a.on,
+.chrome button.on {
+  background: #ff9f1c;
+  border-color: #d97e06;
+}
+.chrome .brand {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding-inline-end: 4px;
+  background: none;
+  border: 0;
+  cursor: default;
+}
+html[data-stage="dark"] .chrome a,
+html[data-stage="dark"] .chrome button {
+  color: #f6f2e9;
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+html[data-stage="dark"] .chrome a.on,
+html[data-stage="dark"] .chrome button.on {
+  color: #0b1020;
+  background: #ffb347;
+  border-color: #ffb347;
+}
+.chrome select {
+  font: 700 13px/1 var(--font-jakarta), sans-serif;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(11, 16, 32, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  color: inherit;
+}
+html[data-stage="dark"] .chrome select {
+  background: #141a28;
+  color: #f6f2e9;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* the frame itself: the designed screen's size, scaled to fit from the top-centre.
+   The negative bottom margin gives back the space the scale-down frees, so the
+   page is exactly as tall as what you see (no clipping, no dead scroll). */
+.frame {
+  flex: none;
+  width: calc(var(--fw, 390) * 1px);
+  height: calc(var(--fh, 844) * 1px);
+  transform: scale(var(--fit, 1));
+  transform-origin: top center;
+  margin-bottom: calc(var(--fh, 844) * 1px * (var(--fit, 1) - 1));
+  border-radius: 34px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 6px rgba(11, 16, 32, 0.12),
+    0 30px 60px -28px rgba(11, 16, 32, 0.45);
+}
+.frame-wide {
+  border-radius: 20px;
+}
+/* the screen takes the frame's size (identical to the design at 390 × 844) */
+.frame:not(.frame-wide) > .app {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Phone: the screen IS the display. Full bleed, like an installed app. ---- */
+@media (max-width: 480px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+  .stage {
+    padding: 0;
+    gap: 0;
+    min-height: 100dvh;
+  }
+  .frame:not(.frame-wide) {
+    width: 100%;
+    height: 100dvh;
+    transform: none;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  /* keep controls clear of the notch / home bar (viewport-fit=cover) */
+  .frame:not(.frame-wide) .app .top {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  }
+  .frame:not(.frame-wide) .app .dock {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+  .frame:not(.frame-wide) .app.splash {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .frame:not(.frame-wide) .app .bar {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Exit button: red power icon at the end of every top bar. Customer top bars are
+   tighter, so it is a touch smaller there (still a comfortable tap target). */
+.app .exit-btn {
+  color: var(--decline);
+}
+.app[data-theme="dark"] .exit-btn,
+.app.tk .exit-btn {
+  color: #ff7b8b;
+}
+.cust .exit-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.cust .exit-btn svg.ic {
+  width: 22px;
+  height: 22px;
+}
+
+/* no rubber-band or accidental text selection while tapping around the app */
+.app {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+.app button,
+.app a {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* ===================== Added motion (additive; never changes layout) =====================
+   shared.css already stops every animation inside .app under prefers-reduced-motion;
+   the guard at the bottom covers the wrappers that sit outside it. */
+.rr-screen {
+  animation: rr-enter 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rr-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* booking confirm: the sheet rises from the bottom edge */
+.rr-sheet {
+  animation: rr-sheet 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rr-sheet {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* splash → role: the diya mark lifts and the page clears */
+.rr-splash-mark {
+  animation: rr-mark 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rr-mark {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rr-rise {
+  animation: rr-rise 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes rr-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- splash: the lamp comes alive ---- */
+.rr-mark-wrap {
+  position: relative;
+}
+/* the name rises letter by letter */
+.rr-letter {
+  display: inline-block;
+  animation: rr-letter 0.6s cubic-bezier(0.2, 1.1, 0.3, 1) both;
+  animation-delay: calc(0.55s + var(--i, 0) * 55ms);
+}
+@keyframes rr-letter {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Urdu name, tagline and loader fade up after it */
+.rr-fade {
+  animation: rr-fade 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rr-fade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* the flame flickers, the halo behind it swells */
+.rr-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: rr-flicker 1.7s ease-in-out infinite;
+}
+@keyframes rr-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+  22% {
+    transform: scale(0.96, 1.06) rotate(-1.6deg);
+  }
+  48% {
+    transform: scale(1.03, 0.97) rotate(1.2deg);
+  }
+  72% {
+    transform: scale(0.97, 1.04) rotate(-0.8deg);
+  }
+}
+.rr-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rr-halo 2.4s ease-in-out infinite;
+}
+@keyframes rr-halo {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: scale(1.28);
+    opacity: 0.38;
+  }
+}
+/* soft light behind the lamp */
+.app.splash .rr-glow {
+  animation: rr-glow 3.2s ease-in-out infinite;
+}
+@keyframes rr-glow {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.07);
+  }
+}
+/* the jhalar fringe sways in from the top */
+.app.splash .rr-fringe {
+  animation: rr-fringe 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  transform-origin: top center;
+}
+@keyframes rr-fringe {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+/* embers drift up off the flame */
+.rr-ember {
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: #ffe2a8;
+  box-shadow: 0 0 8px 2px rgba(255, 159, 28, 0.85);
+  opacity: 0;
+  pointer-events: none;
+  animation: rr-ember 2.8s ease-out infinite;
+}
+@keyframes rr-ember {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+  15% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 0px), -104px) scale(0.3);
+  }
+}
+/* leaving: the whole splash fades and lifts away */
+.app.splash.rr-leave {
+  animation: rr-out 0.45s ease-in both;
+}
+@keyframes rr-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+
+.rr-pop {
+  animation: rr-pop 0.44s cubic-bezier(0.2, 1.25, 0.32, 1) both;
+}
+@keyframes rr-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* map pins drop in, one after another */
+.rr-drop {
+  animation: rr-drop 0.5s cubic-bezier(0.2, 1.2, 0.3, 1) both;
+  animation-delay: calc(140ms + var(--i, 0) * 90ms);
+}
+@keyframes rr-drop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -160%) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* the completion tick draws itself */
+.rr-draw {
+  stroke-dasharray: 30;
+  animation: rr-draw 0.62s cubic-bezier(0.3, 0.9, 0.2, 1) 0.18s both;
+}
+@keyframes rr-draw {
+  from {
+    stroke-dashoffset: 30;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* a selected tile / chip / star settles with a small spring */
+.rr-spring {
+  animation: rr-spring 0.34s cubic-bezier(0.2, 1.4, 0.3, 1) both;
+}
+@keyframes rr-spring {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* status flip (FREE ↔ BUSY ↔ OFF) cross-fades instead of jumping */
+.rr-flip {
+  animation: rr-flip 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rr-flip {
+  from {
+    opacity: 0.25;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* the live countdown ring on the incoming request */
+.rr-ring {
+  animation: rr-ring 42s linear both;
+}
+@keyframes rr-ring {
+  from {
+    stroke-dashoffset: 79;
+  }
+  to {
+    stroke-dashoffset: 264;
+  }
+}
+
+/* typing caret on the live transcript */
+.rr-caret {
+  animation: rr-caret 1s steps(1) infinite;
+}
+@keyframes rr-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ===================== Custom cursor ===================== */
+.rr-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2147483000;
+  opacity: 0;
+}
+.rr-cursor[data-show="1"] {
+  opacity: 1;
+}
+.rr-cursor i {
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffd21f;
+  border: 2px solid #0b1020;
+  box-shadow: 0 1px 4px rgba(11, 16, 32, 0.35);
+  transition: transform 0.12s ease-out;
+}
+.rr-cursor[data-hot="1"] i {
+  transform: scale(1.45);
+}
+.rr-cursor[data-down="1"] i {
+  transform: scale(0.8);
+}
+html[data-cursor="on"],
+html[data-cursor="on"] .app,
+html[data-cursor="on"] .app button,
+html[data-cursor="on"] .app a,
+html[data-cursor="on"] .chrome a,
+html[data-cursor="on"] .chrome button {
+  cursor: none;
+}
+/* text entry keeps its native caret */
+html[data-cursor="on"] input,
+html[data-cursor="on"] textarea,
+html[data-cursor="on"] select,
+html[data-cursor="on"] [contenteditable="true"] {
+  cursor: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rr-screen,
+  .rr-rise,
+  .rr-pop,
+  .rr-drop,
+  .rr-draw,
+  .rr-spring,
+  .rr-flip,
+  .rr-ring,
+  .rr-caret,
+  .rr-sheet,
+  .rr-splash-mark,
+  .rr-letter,
+  .rr-fade,
+  .rr-flame,
+  .rr-halo,
+  .rr-ember,
+  .app.splash .rr-glow,
+  .app.splash .rr-fringe,
+  .app.splash.rr-leave {
+    animation: none !important;
+  }
+  .rr-ember {
+    display: none;
+  }
+  .rr-draw {
+    stroke-dasharray: none;
+  }
 }
