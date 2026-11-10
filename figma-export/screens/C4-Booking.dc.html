@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Booking confirm</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.tm{flex:1;min-height:52px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.tm.on{border-color:var(--teal);background:var(--ttint)}
+.party{flex:1;display:flex;align-items:center;gap:8px;min-height:48px;padding:0 10px;border-radius:12px;font-size:13px;font-weight:700;border:2px solid var(--line);background:var(--surface)}
+.party.ok{border-color:var(--accept);background:color-mix(in srgb,var(--accept) 10%,var(--surface))}
+.party .tk{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;border:2px solid var(--soft)}
+.party.ok .tk{background:var(--accept);border-color:var(--accept);color:#fff}
+.pa td{padding:4px 0;font-size:14px}
+</style>
+</helmet>
+<div class="app cust {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-pin"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></g>
+<g id="i-play"><path d="M7 4l13 8-13 8z"></path></g>
+<g id="i-x"><path d="M6 6l12 12M18 6L6 18"></path></g>
+</defs></svg>
+<header class="top">
+<span class="fx b bold">Rafiq Ahmed</span>
+<div class="seg3" role="group" aria-label="Language" style="flex: none; width: 200px;">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<div class="px col g12" aria-hidden="true" style="opacity: .9;">
+<div class="card" style="height: 90px;"></div>
+<div class="card" style="height: 110px;"></div>
+</div>
+<div class="scrim"></div>
+<section class="sheet col g12" role="dialog" aria-modal="true" aria-labelledby="bk-h">
+<div class="grab"></div>
+<div class="row sb"><h1 id="bk-h" class="t">{{t.h}}</h1><a class="iconbtn" href="C3-Profile.dc.html" aria-label="{{t.close}}"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-x"></use></svg></a></div>
+<div class="col g8"><span class="l bold soft">{{t.when}}</span>
+<div class="row g8" role="radiogroup" aria-label="{{t.when}}">
+<sc-for list="{{times}}" as="o" hint-placeholder-count="3"><button class="tm {{o.c}}" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}"><span>{{o.a}}</span><span class="xs soft num">{{o.b}}</span></button></sc-for>
+</div></div>
+<div class="row g12 card" style="padding: 10px; border-radius: 16px;">
+<div class="map" style="width: 64px; height: 56px; border-radius: 10px; flex: none;" aria-hidden="true"><svg class="bg" viewBox="0 0 64 56"><path d="M0 20h64M24 0v56" stroke="var(--road)" stroke-width="6"></path></svg><span class="me" style="left: 50%; top: 50%; width: 16px; height: 16px;"></span></div>
+<div class="col fx"><span class="l bold">{{t.addr}}</span><span class="xs soft">{{t.addr2}}</span></div>
+<button class="btn btn-o" style="min-height: 44px; font-size: 14px;">{{t.change}}</button>
+</div>
+<div class="card col g8" style="padding: 12px; border-radius: 16px;" aria-label="{{t.price}}">
+<div class="row sb"><span class="l bold">{{t.price}}</span><span class="ai">AI · demo</span></div>
+<div class="vn" style="padding: 8px; border-radius: 14px;"><button class="play" aria-label="{{t.play}}" style="width: 40px; height: 40px;"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-play"></use></svg></button><span class="l fx">{{t.quote}}</span></div>
+<table class="pa" style="border-collapse: collapse; width: 100%;"><tbody>
+<tr><td class="soft">{{t.amt}}</td><td class="bold num" dir="ltr" style="text-align: end; font-size: 20px;">Rs 2,000</td></tr>
+<tr><td class="soft">{{t.inc}}</td><td class="bold" style="text-align: end;">{{t.incV}}</td></tr>
+<tr><td class="soft">{{t.exc}}</td><td class="bold" style="text-align: end;">{{t.excV}}</td></tr>
+</tbody></table>
+<div class="row g8">
+<span class="party ok"><span class="tk"><svg class="ic s20" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><use href="#i-chk"></use></svg></span>{{t.him}}</span>
+<button class="party {{meC}}" aria-pressed="{{me}}" onClick="{{tapMe}}"><span class="tk"><sc-if value="{{me}}" hint-placeholder-val="{{false}}"><svg class="ic" viewBox="0 0 24 24" style="width: 14px; height: 14px;"><use href="#i-chk"></use></svg></sc-if></span>{{t.you}}</button>
+</div>
+</div>
+<a class="btn btn-t" href="C5-Live.dc.html" style="min-height: 56px;">{{t.confirm}}</a>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"en"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'en';
+    const tsel = (this.state && this.state.tsel) || 0;
+    const me = !!(this.state && this.state.me);
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { h: 'بکنگ کی تصدیق', close: 'بند کریں', when: 'کب؟', tm: [['ابھی', '~15 منٹ'], ['1 گھنٹے میں', '5:30'], ['کل صبح', '10:00']], addr: 'گھر 14، گلی 22، جی-11/3', addr2: 'نقشے پر پن لگا ہے', change: 'بدلیں', price: 'طے شدہ قیمت', play: 'رفیق کا وائس نوٹ', quote: '“دو ہزار، والو کا خرچ الگ”', amt: 'رقم', inc: 'شامل', incV: 'مزدوری', exc: 'شامل نہیں', excV: 'نیا والو', him: 'رفیق: منظور', you: 'آپ: منظور کریں', confirm: 'بکنگ پکی کریں' },
+      rm: { h: 'Booking ki tasdeeq', close: 'Band karein', when: 'Kab?', tm: [['Abhi', '~15 min'], ['1 ghante mein', '5:30'], ['Kal subah', '10:00']], addr: 'Ghar 14, Gali 22, G-11/3', addr2: 'Naqshe par pin laga hai', change: 'Badlein', price: 'Tay shuda qeemat', play: 'Rafiq ka voice note', quote: '“Do hazaar, valve ka kharcha alag”', amt: 'Raqam', inc: 'Shaamil', incV: 'Mazdoori', exc: 'Shaamil nahi', excV: 'Naya valve', him: 'Rafiq: manzoor', you: 'Aap: manzoor karein', confirm: 'Booking pakki karein' },
+      en: { h: 'Confirm booking', close: 'Close', when: 'When?', tm: [['Now', '~15 min'], ['In 1 hour', '5:30 pm'], ['Tomorrow', '10:00 am']], addr: 'House 14, Street 22, G-11/3', addr2: 'Pinned on map', change: 'Change', price: 'Agreed price', play: 'Rafiq’s voice note', quote: '“Two thousand, valve cost extra”', amt: 'Amount', inc: 'Included', incV: 'Labour', exc: 'Not included', excV: 'New valve', him: 'Rafiq agreed', you: 'Tap to agree', confirm: 'Confirm booking' }
+    };
+    const t = D[L];
+    const times = t.tm.map((x, i) => ({ a: x[0], b: x[1], on: i === tsel, c: i === tsel ? 'on' : '', pick: () => this.setState({ tsel: i }) }));
+    return { t, times, me, meC: me ? 'ok' : '', tapMe: () => this.setState({ me: !me }), dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

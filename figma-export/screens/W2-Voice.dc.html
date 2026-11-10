@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ur">
+<head>
+<meta charset="utf-8">
+<title>Voice onboarding step 1</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="app work {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-spk"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></g>
+<g id="i-mic"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></g>
+<g id="i-kb"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"></path></g>
+<g id="i-replay"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4"></path></g>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-tools"><path d="M14.5 6.5a4 4 0 0 1 5.2-3.7l-2.6 2.6.5 2.5 2.5.5 2.6-2.6a4 4 0 0 1-5.4 4.9L8 20a2 2 0 0 1-3-3l9.3-9.3a4 4 0 0 1 .2-1.2z"></path></g>
+<g id="i-clock"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></g>
+<g id="i-pin"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></g>
+<g id="i-cam"><path d="M3 8h4l2-3h6l2 3h4v11H3z"></path><circle cx="12" cy="13" r="3.5"></circle></g>
+</defs></svg>
+<header class="top">
+<button class="iconbtn" aria-label="{{t.read}}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-spk"></use></svg></button>
+<div class="seg3" role="group" aria-label="Language">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<main class="col g16 fx px">
+<div class="rail" role="img" aria-label="{{t.step}}">
+<span class="n cur"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-tools"></use></svg></span><span class="ln"></span>
+<span class="n"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-clock"></use></svg></span><span class="ln"></span>
+<span class="n"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-pin"></use></svg></span><span class="ln"></span>
+<span class="n"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-cam"></use></svg></span>
+</div>
+<section class="card col g12" style="padding: 20px; background: var(--tint); border-color: var(--roshan);">
+<div class="row g12">
+<button class="iconbtn" aria-label="{{t.again}}" style="border-color: var(--roshan); background: var(--surface);"><svg class="ic" viewBox="0 0 24 24"><use href="#i-replay"></use></svg></button>
+<h1 class="t nq fx">{{t.q}}</h1>
+</div>
+</section>
+<section class="col g8" aria-live="polite">
+<div class="row sb"><span class="l soft">{{t.heard}}</span><span class="ai">AI · demo</span></div>
+<p class="b bold" style="min-height: 90px;">{{t.said}}<span style="display: inline-block; width: 3px; height: 1.1em; background: var(--roshan); vertical-align: middle; margin-inline-start: 4px;"></span></p>
+</section>
+<section class="col g8">
+<span class="l soft">{{t.filling}}</span>
+<div class="row g8 wrap">
+<span class="chip tr-elec" style="border-color: var(--c);"><span class="gl s32"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-chk"></use></svg></span>{{t.f1}}</span>
+<span class="chip" style="border-color: var(--accept);"><svg class="ic s24" viewBox="0 0 24 24" style="color: var(--accept);"><use href="#i-clock"></use></svg>{{t.f2}}</span>
+<span class="chip" style="border-style: dashed; color: var(--soft);"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-pin"></use></svg>…</span>
+</div>
+</section>
+</main>
+<div class="dock" style="align-items: center; gap: 14px;">
+<div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="row" style="width: 100%; justify-content: space-between;">
+<button class="iconbtn" aria-label="{{t.type}}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-kb"></use></svg></button>
+<div class="orb"><button class="mic" aria-label="{{t.listening}}" aria-pressed="true"><svg class="ic lg" viewBox="0 0 24 24"><use href="#i-mic"></use></svg></button></div>
+<a class="iconbtn" href="W3-Trade.dc.html" aria-label="{{t.next}}" style="background: var(--accept); border-color: var(--accept); color: #fff;"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chk"></use></svg></a>
+</div>
+<span class="l bold rt">{{t.listening}}</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"ur"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'ur';
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { q: 'آپ کیا کام کرتے ہیں؟', heard: 'آپ نے کہا', said: '“میں بجلی کا کام کرتا ہوں، پندرہ سال سے، راولپنڈی میں…”', filling: 'خود بخود بھر رہا ہے', f1: 'بجلی والا', f2: '15 سال', listening: 'سن رہے ہیں…', type: 'لکھ کر بتائیں', next: 'ٹھیک ہے، آگے', again: 'سوال دوبارہ سنیں', step: 'مرحلہ 1 از 4', read: 'یہ صفحہ سنیں' },
+      rm: { q: 'Aap kya kaam karte hain?', heard: 'Aap ne kaha', said: '“Main bijli ka kaam karta hoon, pandrah saal se, Rawalpindi mein…”', filling: 'Khud ba khud bhar raha hai', f1: 'Bijli waala', f2: '15 saal', listening: 'Sun rahe hain…', type: 'Likh kar batayein', next: 'Theek hai, aage', again: 'Sawal dobara sunein', step: 'Marhala 1 az 4', read: 'Yeh safha sunein' },
+      en: { q: 'What work do you do?', heard: 'You said', said: '“I do electrical work, for fifteen years, in Rawalpindi…”', filling: 'Filling in by itself', f1: 'Electrician', f2: '15 years', listening: 'Listening…', type: 'Type instead', next: 'OK, next', again: 'Hear the question again', step: 'Step 1 of 4', read: 'Read this page aloud' }
+    };
+    return { t: D[L], dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

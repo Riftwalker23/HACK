@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Empty and error states</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.es{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:14px 16px;border-radius:20px;background:var(--surface);border:2px solid var(--line)}
+.es .ill{width:84px;height:84px;border-radius:50%;display:grid;place-items:center}
+.es .tg{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
+</style>
+</helmet>
+<div class="app cust {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-search"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4M8 11h6"></path></g>
+<g id="i-wifi"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01M3 3l18 18"></path></g>
+<g id="i-inbox"><path d="M3 13l3-8h12l3 8v6H3z"></path><path d="M3 13h5l1 3h6l1-3h5"></path></g>
+<g id="i-phone"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></g>
+</defs></svg>
+<header class="top">
+<h1 class="b bold fx">{{t.h}}</h1>
+<div class="seg3" role="group" aria-label="Language" style="flex: none; width: 200px;">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<main class="col g12 fx px" style="padding-bottom: 16px;">
+<section class="es">
+<span class="tg">{{t.k1}}</span>
+<span class="ill" style="background: var(--ttint); color: var(--teal-deep);"><svg class="ic xl" viewBox="0 0 24 24" style="color: var(--teal);"><use href="#i-search"></use></svg></span>
+<p class="b bold">{{t.m1}}</p>
+<a class="btn btn-t" href="C2-Results.dc.html" style="min-height: 44px;">{{t.a1}}</a>
+</section>
+<section class="es" role="alert">
+<span class="tg">{{t.k2}}</span>
+<span class="ill" style="background: color-mix(in srgb, var(--busy) 14%, var(--surface));"><svg class="ic xl" viewBox="0 0 24 24" style="color: var(--busy);"><use href="#i-wifi"></use></svg></span>
+<p class="b bold">{{t.m2}}</p>
+<span class="row g4 xs soft"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-phone"></use></svg>{{t.saved}}</span>
+<button class="btn btn-o" style="min-height: 44px;">{{t.a2}}</button>
+</section>
+<section class="es">
+<span class="tg">{{t.k3}}</span>
+<span class="ill" style="background: var(--tint);"><svg class="ic xl" viewBox="0 0 24 24" style="color: var(--roshan-text);"><use href="#i-inbox"></use></svg></span>
+<p class="b bold">{{t.m3}}</p>
+<a class="btn btn-p" href="W6-Home.dc.html" style="min-height: 44px; border-radius: 16px;">{{t.a3}}</a>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"en"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'en';
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { h: 'خالی اور خرابی کی حالتیں', k1: 'کوئی نتیجہ نہیں', m1: '3 کلومیٹر میں ابھی کوئی پلمبر فارغ نہیں۔', a1: '6 کلومیٹر تک دیکھیں', k2: 'انٹرنیٹ نہیں', m2: 'انٹرنیٹ نہیں مل رہا۔ آپ کی درخواست محفوظ ہے۔', saved: 'آپ کے فون میں محفوظ', a2: 'دوبارہ کوشش کریں', k3: 'کوئی کام نہیں', m3: 'آج ابھی کوئی کام نہیں آیا۔', a3: 'فارغ ہوں، بتائیں' },
+      rm: { h: 'Khaali aur kharabi ki haalatein', k1: 'Koi nateeja nahi', m1: '3 km mein abhi koi plumber faarigh nahi.', a1: '6 km tak dekhein', k2: 'Internet nahi', m2: 'Internet nahi mil raha. Aap ki darkhwast mehfooz hai.', saved: 'Aap ke phone mein mehfooz', a2: 'Dobara koshish karein', k3: 'Koi kaam nahi', m3: 'Aaj abhi koi kaam nahi aaya.', a3: 'Faarigh hoon, batayein' },
+      en: { h: 'Empty & error states', k1: 'Zero results', m1: 'No plumber is free within 3 km right now.', a1: 'Search up to 6 km', k2: 'Offline', m2: 'No internet. Your request is saved and will send itself.', saved: 'Saved on your phone', a2: 'Try again', k3: 'Empty list (worker)', m3: 'No jobs yet today.', a3: 'Tell them I’m free' }
+    };
+    return { t: D[L], dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

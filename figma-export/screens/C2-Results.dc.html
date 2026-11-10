@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Results</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.fc{min-height:44px;padding:0 14px;border-radius:999px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:14px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.fc.on{background:var(--teal);border-color:var(--teal);color:var(--on-teal)}
+.wc{padding:12px;border-radius:18px;background:var(--surface);border:2px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.av{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font:800 18px/1 "Plus Jakarta Sans",sans-serif;flex:none;background:var(--ttint);color:var(--text)}
+.why{font-size:13px;line-height:1.4;padding:6px 10px;border-radius:10px;background:color-mix(in srgb,var(--cobalt) 8%,var(--surface));display:flex;gap:6px;align-items:flex-start}
+</style>
+</helmet>
+<div class="app cust {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-back"><path d="M15 5l-7 7 7 7"></path></g>
+<g id="i-phone"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"></path></g>
+<g id="i-star"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></g>
+<g id="i-list"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></g>
+<g id="g-plum"><path d="M13 4s-7 8-7 13a7 7 0 0 0 14 0c0-5-7-13-7-13z"></path><path d="M20 43l13-13"></path><path d="M30 33l-6-6 9-9a6 6 0 0 1 8.5 0l-3 3 1 4 4 1a6 6 0 0 1-1 4l-6 6"></path></g>
+<g id="s-free"><circle cx="8" cy="8" r="7" fill="currentColor"></circle></g>
+<g id="s-busy"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"></path></g>
+</defs></svg>
+<header class="top">
+<a class="iconbtn" href="C1-Describe.dc.html" aria-label="{{t.back}}"><svg class="ic s24 flip" viewBox="0 0 24 24"><use href="#i-back"></use></svg></a>
+<h1 class="b bold fx">{{t.h}}</h1>
+<div class="seg3" role="group" aria-label="Language" style="flex: none; width: 180px;">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<div class="map" style="height: 190px; flex: none;" role="img" aria-label="{{t.map}}">
+<svg class="bg" viewBox="0 0 390 190" preserveAspectRatio="none" aria-hidden="true"><path d="M0 60h390M0 140h390M90 0v190M230 0v190M320 0v190" stroke="var(--road)" stroke-width="12"></path><path d="M0 180L390 20" stroke="var(--road)" stroke-width="16"></path><rect x="250" y="76" width="56" height="50" rx="6" fill="#CFE3CF" opacity=".7"></rect></svg>
+<span class="me" style="left: 52%; top: 52%;"></span>
+<span class="pin tr-plum" style="left: 64%; top: 30%; width: 44px; height: 44px; background: var(--c); color: var(--g);"><svg class="gly" viewBox="0 0 48 48"><use href="#g-plum"></use></svg></span>
+<span class="pin tr-plum" style="left: 28%; top: 72%; width: 38px; height: 38px; background: var(--c); color: var(--g);"><svg class="gly" viewBox="0 0 48 48"><use href="#g-plum"></use></svg></span>
+<span class="pin tr-plum" style="left: 84%; top: 80%; width: 32px; height: 32px; background: var(--c); color: var(--g);"><svg class="gly" viewBox="0 0 48 48"><use href="#g-plum"></use></svg></span>
+<span class="chip sm" style="position: absolute; inset-block-end: 10px; inset-inline-start: 12px; min-height: 36px;"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-list"></use></svg>{{t.count}}</span>
+</div>
+<div class="row g8 px" style="padding-block: 10px; overflow: hidden; flex: none;" role="group" aria-label="{{t.filters}}">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><button class="fc {{f.c}}" aria-pressed="{{f.on}}" onClick="{{f.tg}}">{{f.label}}</button></sc-for>
+</div>
+<main class="col g12 fx px" style="overflow: hidden;">
+<sc-for list="{{workers}}" as="w" hint-placeholder-count="2">
+<article class="wc">
+<div class="row g12">
+<span class="av">{{w.ini}}</span>
+<div class="col fx g4">
+<div class="row sb g8"><a href="C3-Profile.dc.html" class="b bold" style="text-decoration: none;">{{w.name}}</a><span class="b bold num" dir="ltr">{{w.km}}</span></div>
+<div class="row g8">
+<span class="pill {{w.st}}" style="height: 30px; font-size: 13px; padding-inline: 8px 10px;"><span class="dot"><svg viewBox="0 0 16 16"><use href="#s-{{w.st}}"></use></svg></span>{{w.stw}}</span>
+<span class="row g4 l"><svg class="ic s20" viewBox="0 0 24 24" style="fill: var(--star); color: #8A6200;"><use href="#i-star"></use></svg><b class="num">{{w.r}}</b><span class="soft">· {{w.jobs}}</span></span>
+</div>
+</div>
+</div>
+<p class="why"><span class="ai" style="flex: none;">AI</span><span>{{w.why}}</span></p>
+<div class="row g8">
+<span class="l soft fx num">{{w.price}}</span>
+<button class="btn btn-o" aria-label="{{t.call}} {{w.name}}" style="min-height: 44px; width: 48px; padding: 0;"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-phone"></use></svg></button>
+<a class="btn btn-t" href="C3-Profile.dc.html" style="min-height: 44px;">{{t.req}}</a>
+</div>
+</article>
+</sc-for>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"en"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'en';
+    const off = (this.state && this.state.off) || {};
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { back: 'واپس', h: 'قریب پلمبر', map: 'نقشہ: آپ کے قریب 3 پلمبر', count: '3 قریب', filters: 'فلٹر', call: 'کال', req: 'بلائیں',
+        f: ['ابھی فارغ', '3 کلومیٹر', '4.5+ ستارے', 'Rs 1–3k'], free: 'فارغ', busy: '4 بجے تک مصروف', jobs: 'کام',
+        w1: 'سب سے قریب پلمبر جس نے 12 گیزر ٹھیک کیے', w2: 'سب سے زیادہ ریٹنگ، لیکن ابھی مصروف' },
+      rm: { back: 'Wapas', h: 'Qareeb plumber', map: 'Naqsha: aap ke qareeb 3 plumber', count: '3 qareeb', filters: 'Filter', call: 'Call', req: 'Bulayein',
+        f: ['Abhi faarigh', '3 km', '4.5+ sitaare', 'Rs 1–3k'], free: 'Faarigh', busy: '4 baje tak masroof', jobs: 'kaam',
+        w1: 'Sab se qareeb plumber jis ne 12 geyser theek kiye', w2: 'Sab se zyada rating, lekin abhi masroof' },
+      en: { back: 'Back', h: 'Plumbers nearby', map: 'Map: 3 plumbers near you', count: '3 nearby', filters: 'Filters', call: 'Call', req: 'Request',
+        f: ['Available now', '≤ 3 km', '4.5+ stars', 'Rs 1–3k'], free: 'Available', busy: 'Busy till 4 pm', jobs: 'jobs',
+        w1: 'Closest plumber who has fixed 12 geyser leaks', w2: 'Highest rated nearby, but on a job now' }
+    };
+    const t = D[L];
+    const filters = t.f.map((label, i) => ({ label, on: !off[i], c: off[i] ? '' : 'on', tg: () => this.setState({ off: Object.assign({}, off, { [i]: !off[i] }) }) }));
+    const workers = [
+      { ini: 'RA', name: 'Rafiq Ahmed', km: '1.2 km', st: 'free', stw: t.free, r: '4.8', jobs: '38 ' + t.jobs, why: t.w1, price: 'Rs 1,500–2,500' },
+      { ini: 'ZM', name: 'Zahid Mehmood', km: '2.4 km', st: 'busy', stw: t.busy, r: '4.9', jobs: '112 ' + t.jobs, why: t.w2, price: 'Rs 2,000–3,000' }
+    ];
+    return { t, filters, workers, dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

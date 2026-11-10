@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ur">
+<head>
+<meta charset="utf-8">
+<title>Job complete</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.rc td{padding:7px 0;font-size:18px;border-bottom:1px dashed var(--line)}
+</style>
+</helmet>
+<div class="app work {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-spk"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></g>
+<g id="i-chk"><path d="M4 12.5l5 5L20 6.5"></path></g>
+<g id="i-house"><path d="M3 11l9-7 9 7M5 9.5V20h14V9.5M10 20v-6h4v6"></path></g>
+<g id="i-star"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></g>
+</defs></svg>
+<header class="top">
+<button class="iconbtn" aria-label="{{t.read}}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-spk"></use></svg></button>
+<div class="seg3" role="group" aria-label="Language">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<main class="col g16 fx px">
+<section class="card col" style="overflow: hidden; padding: 0;">
+<div class="truck"></div>
+<div class="col g12" style="padding: 20px; align-items: center; text-align: center;">
+<span class="gl s88" style="--c: var(--accept); --g: #fff;"><svg class="ic xl" viewBox="0 0 24 24"><use href="#i-chk"></use></svg></span>
+<h1 class="t nq">{{t.done}}</h1>
+<span class="d num" dir="ltr" style="font-family: 'Plus Jakarta Sans', sans-serif;">Rs 2,500</span>
+<span class="l soft">{{t.cash}}</span>
+</div>
+<table class="rc" style="border-collapse: collapse; margin: 0 20px 16px; width: calc(100% - 40px);"><tbody>
+<tr><td class="soft">{{t.cust}}</td><td class="bold" style="text-align: end;">{{t.custV}}</td></tr>
+<tr><td class="soft">{{t.job}}</td><td class="bold" style="text-align: end;">{{t.jobV}}</td></tr>
+<tr><td class="soft">{{t.time}}</td><td class="bold num" style="text-align: end;">{{t.timeV}}</td></tr>
+</tbody></table>
+<div class="truck"></div>
+</section>
+<section class="col g8" aria-live="polite">
+<div class="row sb"><span class="b bold">{{t.trust}}</span><span class="row g4 l bold rt"><svg class="ic s24" viewBox="0 0 24 24" style="fill: var(--star); color: #8A6200;"><use href="#i-star"></use></svg>+12</span></div>
+<div class="ribbon" role="progressbar" aria-valuenow="74" aria-valuemin="0" aria-valuemax="100" aria-label="{{t.trust}}"><i></i></div>
+<span class="l soft">{{t.jobs}}</span>
+</section>
+</main>
+<div class="dock">
+<a class="btn btn-p big" href="W6-Home.dc.html"><svg class="ic lg" viewBox="0 0 24 24"><use href="#i-house"></use></svg>{{t.home}}</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"ur"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'ur';
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { done: 'کام مکمل', cash: 'نقد ملے', cust: 'گاہک', custV: 'عائشہ، جی-11', job: 'کام', jobV: 'ساکٹ بدلا', time: 'وقت', timeV: '45 منٹ', trust: 'آپ کی ساکھ', jobs: '39 مکمل کام', home: 'گھر', read: 'یہ صفحہ سنیں' },
+      rm: { done: 'Kaam mukammal', cash: 'Naqd mile', cust: 'Gahak', custV: 'Ayesha, G-11', job: 'Kaam', jobV: 'Socket badla', time: 'Waqt', timeV: '45 minute', trust: 'Aap ki saakh', jobs: '39 mukammal kaam', home: 'Ghar', read: 'Yeh safha sunein' },
+      en: { done: 'Job complete', cash: 'Paid in cash', cust: 'Customer', custV: 'Ayesha, G-11', job: 'Work', jobV: 'Socket replaced', time: 'Time', timeV: '45 min', trust: 'Your reputation', jobs: '39 jobs completed', home: 'Home', read: 'Read this page aloud' }
+    };
+    return { t: D[L], dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>

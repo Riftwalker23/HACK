@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Worker profile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+.gp{position:relative;height:96px;border-radius:14px;overflow:hidden}
+.gp span{position:absolute;inset-inline:6px;inset-block-end:6px;background:rgba(11,16,32,.85);color:#fff;font:700 11px/1.3 "Plus Jakarta Sans","Noto Naskh Arabic",sans-serif;padding:4px 6px;border-radius:6px;text-align:center}
+.sumry{font-size:14px;line-height:1.55;padding:12px;border-radius:14px;background:color-mix(in srgb,var(--cobalt) 7%,var(--surface));border:1px dashed var(--cobalt)}
+.bar{position:absolute;inset-inline:0;inset-block-end:0;padding:12px 16px 20px;background:var(--surface);border-top:2px solid var(--line);display:flex;align-items:center;gap:10px;box-shadow:var(--sh2)}
+</style>
+</helmet>
+<div class="app cust {{cls}}" dir="{{dir}}" lang="{{lc}}" data-theme="{{theme}}">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-back"><path d="M15 5l-7 7 7 7"></path></g>
+<g id="i-phone"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"></path></g>
+<g id="i-star"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></g>
+<g id="i-clock"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></g>
+<g id="g-plum"><path d="M13 4s-7 8-7 13a7 7 0 0 0 14 0c0-5-7-13-7-13z"></path><path d="M20 43l13-13"></path><path d="M30 33l-6-6 9-9a6 6 0 0 1 8.5 0l-3 3 1 4 4 1a6 6 0 0 1-1 4l-6 6"></path></g>
+<g id="s-free"><circle cx="8" cy="8" r="7" fill="currentColor"></circle></g>
+</defs></svg>
+<header class="top">
+<a class="iconbtn" href="C2-Results.dc.html" aria-label="{{t.back}}"><svg class="ic s24 flip" viewBox="0 0 24 24"><use href="#i-back"></use></svg></a>
+<span class="fx"></span>
+<div class="seg3" role="group" aria-label="Language" style="flex: none; width: 200px;">
+<button class="{{ur_on}}" aria-pressed="{{ur_p}}" onClick="{{setUr}}">اردو</button>
+<button class="{{rm_on}}" aria-pressed="{{rm_p}}" onClick="{{setRm}}">Roman</button>
+<button class="{{en_on}}" aria-pressed="{{en_p}}" onClick="{{setEn}}">EN</button>
+</div>
+</header>
+<main class="col g12 fx px" style="padding-bottom: 96px; overflow: hidden;">
+<section class="card col" style="overflow: hidden; padding: 0;">
+<div class="truck"></div>
+<div class="row g12" style="padding: 14px;">
+<span style="width: 72px; height: 72px; border-radius: 20px; background: var(--ttint); display: grid; place-items: center; font: 800 24px/1 'Plus Jakarta Sans', sans-serif; flex: none;">RA</span>
+<div class="col g4 fx">
+<h1 class="t" style="font-size: 22px;">Rafiq Ahmed</h1>
+<div class="row g8 wrap">
+<span class="chip sm tr-plum" style="border-color: var(--c);"><span class="gl" style="width: 22px; height: 22px;"><svg class="gly" viewBox="0 0 48 48"><use href="#g-plum"></use></svg></span>{{t.trade}}</span>
+<span class="pill" style="height: 32px; font-size: 13px;"><span class="dot"><svg viewBox="0 0 16 16"><use href="#s-free"></use></svg></span>{{t.free}}</span>
+<span class="chip sm" style="border-style: dashed;">{{t.id}}</span>
+</div>
+</div>
+</div>
+</section>
+<section class="col g8">
+<div class="row sb"><h2 class="l bold">{{t.work}}</h2><span class="ai">AI · {{t.tagged}}</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+<div class="gp" role="img" aria-label="{{t.g1}}"><svg viewBox="0 0 110 96" width="100%" height="100%" aria-hidden="true"><rect width="110" height="96" fill="#3B4A5E"></rect><rect x="38" y="10" width="34" height="56" rx="14" fill="#E9ECF0"></rect><path d="M48 66v20M62 66v20" stroke="#8D95A3" stroke-width="4"></path></svg><span>{{t.g1}}</span></div>
+<div class="gp" role="img" aria-label="{{t.g2}}"><svg viewBox="0 0 110 96" width="100%" height="100%" aria-hidden="true"><rect width="110" height="96" fill="#2E3D4F"></rect><path d="M0 50h40a10 10 0 0 1 10 10v36M110 30H70a10 10 0 0 0-10 10v10" stroke="#B7C0CC" stroke-width="8" fill="none"></path></svg><span>{{t.g2}}</span></div>
+<div class="gp" role="img" aria-label="{{t.g3}}"><svg viewBox="0 0 110 96" width="100%" height="100%" aria-hidden="true"><rect width="110" height="96" fill="#44505F"></rect><rect x="20" y="30" width="70" height="40" rx="18" fill="#F4F4F2"></rect><circle cx="55" cy="22" r="8" fill="#2A6FD7"></circle></svg><span>{{t.g3}}</span></div>
+</div>
+</section>
+<section class="card col g8" style="padding: 14px;" aria-label="{{t.trust}}">
+<div class="row g12">
+<span class="t num" dir="ltr">4.8</span>
+<div class="col"><span class="stars" aria-hidden="true"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-star"></use></svg><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-star"></use></svg><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-star"></use></svg><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-star"></use></svg><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-star"></use></svg></span><span class="l soft">{{t.jobs}}</span></div>
+</div>
+<span class="row g4 l soft"><svg class="ic s20" viewBox="0 0 24 24"><use href="#i-clock"></use></svg>{{t.last}}</span>
+<p class="sumry"><span class="ai" style="margin-inline-end: 6px;">AI · {{t.from}}</span>{{t.sum}}</p>
+</section>
+</main>
+<div class="bar">
+<div class="col fx"><span class="xs soft">{{t.band}}</span><span class="b bold num" dir="ltr" style="text-align: start;">Rs 1,500–2,500</span></div>
+<button class="btn btn-o" aria-label="{{t.call}}" style="width: 48px; padding: 0;"><svg class="ic s24" viewBox="0 0 24 24"><use href="#i-phone"></use></svg></button>
+<a class="btn btn-t" href="C4-Booking.dc.html">{{t.req}}</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"lang":{"editor":"enum","options":["ur","rm","en"],"default":"en"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (this.state && this.state.lang) || this.props.lang || 'en';
+    const set = (l) => () => this.setState({ lang: l });
+    const D = {
+      ur: { id: 'شناختی کارڈ درج · ڈیمو', back: 'واپس', trade: 'پلمبر', free: 'فارغ', work: 'کام کی تصاویر', tagged: 'نام خود لگے', g1: 'گیزر', g2: 'پائپ لائن', g3: 'باتھ روم فٹنگ', trust: 'بھروسہ', jobs: '38 مکمل کام', last: 'آخری کام: 2 دن پہلے، آئی-10', from: '31 آراء سے', sum: 'وقت پر آتے ہیں، کام صاف، اور قیمت پہلے بتا دیتے ہیں۔ گیزر لیک میں خاص مہارت۔', band: 'قیمت کا اندازہ', call: 'کال کریں', req: 'بلائیں' },
+      rm: { id: 'ID card darj · demo', back: 'Wapas', trade: 'Plumber', free: 'Faarigh', work: 'Kaam ki tasaveer', tagged: 'naam khud lage', g1: 'Geyser', g2: 'Pipe line', g3: 'Bathroom fitting', trust: 'Bharosa', jobs: '38 mukammal kaam', last: 'Aakhri kaam: 2 din pehle, I-10', from: '31 aara se', sum: 'Waqt par aate hain, kaam saaf, aur qeemat pehle bata dete hain. Geyser leak mein khaas maharat.', band: 'Qeemat ka andaza', call: 'Call karein', req: 'Bulayein' },
+      en: { id: 'ID on file · demo', back: 'Back', trade: 'Plumber', free: 'Available', work: 'Past work', tagged: 'auto-tagged', g1: 'Geyser', g2: 'Pipe line', g3: 'Bathroom fitting', trust: 'Trust', jobs: '38 jobs completed', last: 'Last job: 2 days ago, I-10', from: 'from 31 reviews', sum: 'Arrives on time, leaves the work clean, and states the price before starting. Especially strong on geyser leaks.', band: 'Typical price', call: 'Call Rafiq', req: 'Request Rafiq' }
+    };
+    return { t: D[L], dir: L === 'ur' ? 'rtl' : 'ltr', cls: L, lc: L === 'rm' ? 'ur-Latn' : L, theme: this.props.dark ? 'dark' : 'light',
+      ur_on: L === 'ur' ? 'on' : '', rm_on: L === 'rm' ? 'on' : '', en_on: L === 'en' ? 'on' : '',
+      ur_p: L === 'ur', rm_p: L === 'rm', en_p: L === 'en', setUr: set('ur'), setRm: set('rm'), setEn: set('en') };
+  }
+}
+</script>
+</body>
+</html>
