@@ -1,0 +1,41 @@
+{
+  "name": "roshan-rozgar",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
+    "db:reset": "node -e \"require('node:fs').rmSync('.data',{recursive:true,force:true});console.log('[reset] .data removed')\"",
+    "seed": "tsx --env-file-if-exists=.env db/seed.ts",
+    "setup": "npm run db:generate && npm run db:migrate && npm run seed",
+    "verify": "tsx --env-file-if-exists=.env scripts/verify-invariants.ts",
+    "smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
+    "@electric-sql/pglite": "^0.5.16",
+    "drizzle-orm": "^0.45.4",
+    "next": "16.4.6",
+    "postgres": "^4.1.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "4.3.3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.6",
+    "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
