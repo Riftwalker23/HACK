@@ -37,7 +37,11 @@ const JOB_KEY = 'rr_active_job';
 export async function api<T>(url: string, init?: RequestInit): Promise<{ data: T; meta?: Record<string, unknown> }> {
   const response = await fetch(url, {
     ...init,
-    headers: { ...(init?.body ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
+    // A FormData body must set its own multipart boundary; forcing JSON here would destroy it.
+    headers: {
+      ...(init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+      ...init?.headers,
+    },
   });
   const payload = (await response.json()) as ApiEnvelope<T>;
   if (!response.ok || !payload.ok) {
