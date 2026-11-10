@@ -42,17 +42,30 @@ async function loadProviders(): Promise<AiProvider[]> {
 
   const loaded: AiProvider[] = [];
 
-  for (const mod of ['./anthropic', './gemini', './openai', './elevenlabs', './stub'] as const) {
+  // One LITERAL import per provider. A variable `import(mod)` cannot be resolved
+  // by webpack (`next dev --webpack`): every provider then fails to load and all
+  // AI endpoints 500 with "Tried: ." Turbopack happened to tolerate it.
+  const modules: Array<[string, () => Promise<{ provider?: AiProvider; default?: AiProvider }>]> = [
+    ['./anthropic', () => import('./anthropic')],
+    ['./gemini', () => import('./gemini')],
+    ['./openai', () => import('./openai')],
+    ['./elevenlabs', () => import('./elevenlabs')],
+    ['./stub', () => import('./stub')],
+  ];
+
+  for (const [name, load] of modules) {
     try {
-      const m = (await import(mod)) as { provider?: AiProvider; default?: AiProvider };
+      const m = await load();
       const p = m.provider ?? m.default;
       if (p) loaded.push(p);
     } catch (err) {
-      console.warn(`[ai] provider ${mod} unavailable:`, (err as Error)?.message);
+      console.warn(`[ai] provider ${name} unavailable:`, (err as Error)?.message);
     }
   }
 
-  globalForAi.__roshanProviders = loaded;
+  // Cache only a successful load: caching an empty list would keep every AI
+  // endpoint broken for the life of the process, even after the cause is fixed.
+  if (loaded.length) globalForAi.__roshanProviders = loaded;
   return loaded;
 }
 
