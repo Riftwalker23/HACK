@@ -1,12 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Stage from '@/components/stage';
 import { useLang } from '@/components/lang';
 import { ExitBtn, Icon, LangSwitch, Screen } from '@/components/ui';
 import { AiChip } from '@/components/customer/ai-chip';
-import { api, getSession, saveSearch, signInDemo, type Classification } from '@/lib/client-api';
+import { api, getSession, saveSearch, type Classification } from '@/lib/client-api';
 
 type Upload = { url: string; kind: string; bytes: number };
 
@@ -21,7 +22,12 @@ export default function DescribePage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<Classification | null>(null);
   const [where, setWhere] = useState('');
-  useEffect(() => { setWhere(getSession('customer')?.addressLabel ?? ''); }, []);
+  // First visit: no saved profile yet, so collect name + location before anything else.
+  useEffect(() => {
+    const me = getSession('customer');
+    if (!me) { router.replace('/customer/setup'); return; }
+    setWhere(me.addressLabel ?? '');
+  }, [router]);
 
   const labels = lang === 'ur'
     ? { title: 'کیا کام کروانا ہے؟', hint: 'مسئلہ اپنے الفاظ میں لکھیں یا تصویر لگائیں۔', describe: 'مسئلہ بتائیں', photo: 'تصویر شامل کریں', find: 'قریب کاریگر تلاش کریں', analyzing: 'مسئلہ سمجھ رہے ہیں…', understood: 'AI نے یہ سمجھا', remove: 'تصویر ہٹائیں' }
@@ -37,7 +43,6 @@ export default function DescribePage() {
     }
     setBusy(true);
     try {
-      await signInDemo('customer');
       let photoUrl: string | undefined;
       if (file) {
         const form = new FormData();
@@ -65,7 +70,7 @@ export default function DescribePage() {
     <Stage>
       <Screen skin="cust" defaultLang="en" id="s-c1" extra="rr-screen">
         <header className="top">
-          <span className="row g4 l bold fx"><Icon name="i-pin" cls="s20 tl" /> {where || '—'}</span>
+          <Link href="/customer/setup" className="row g4 l bold fx" style={{ minWidth: 0, textDecoration: 'none' }} aria-label="Change location"><Icon name="i-pin" cls="s20 tl" /> {where || '—'} <Icon name="i-pen" cls="s20" /></Link>
           <LangSwitch fallback="en" style={{ flex: 'none', width: '188px' }} />
           <ExitBtn />
         </header>
